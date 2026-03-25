@@ -1,0 +1,474 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --background: #0c0c1f;
+    --surface-container: #17172f;
+    --surface-container-high: #1d1d37;
+    --surface-container-highest: #23233f;
+    --surface-bright: #292948;
+    --primary: #8eff71;
+    --primary-glow: #39FF14;
+    --secondary: #00e3fd;
+    --tertiary: #ff7948;
+    --error: #ff7351;
+    --on-background: #e5e3ff;
+    --on-surface-variant: #aaa8c3;
+    --outline-variant: #46465c;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background: var(--background);
+    color: var(--on-background);
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 40%;
+    height: 40%;
+    background: rgba(142, 255, 113, 0.05);
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    bottom: -10%;
+    right: -10%;
+    width: 40%;
+    height: 40%;
+    background: rgba(0, 212, 236, 0.05);
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Header */
+.game-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(12, 12, 31, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(142, 255, 113, 0.1);
+    box-shadow: 0 8px 32px rgba(57, 255, 20, 0.15);
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.player-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(142, 255, 113, 0.4);
+}
+
+.player-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.header-title h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    color: var(--primary-glow);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+    line-height: 1;
+}
+
+.level-bar {
+    width: 96px;
+    height: 6px;
+    background: var(--surface-container-highest);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 4px;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.level-progress {
+    height: 100%;
+    width: 85%;
+    background: var(--primary);
+}
+
+.level-text {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.energy-btn {
+    background: var(--surface-container-highest);
+    color: var(--primary-glow);
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 900;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.energy-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.25);
+}
+
+.wave-text {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Main Game Area */
+.game-main {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    padding-top: 80px;
+}
+
+#game-canvas {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-container);
+    border: 2px solid rgba(142, 255, 113, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(0, 212, 236, 0.2);
+    z-index: 1;
+}
+
+/* Threat Indicator */
+.threat-indicator {
+    position: fixed;
+    top: 120px;
+    right: 24px;
+    background: rgba(185, 41, 2, 0.4);
+    backdrop-filter: blur(24px);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 115, 81, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 0 30px rgba(255, 115, 81, 0.3);
+    z-index: 50;
+}
+
+/* Damage Control Panel */
+.damage-control {
+    position: fixed;
+    top: 280px;
+    right: 24px;
+    background: rgba(142, 255, 113, 0.15);
+    backdrop-filter: blur(24px);
+    padding: 16px;
+    border-radius: 16px;
+    border: 2px solid rgba(142, 255, 113, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 30px rgba(142, 255, 113, 0.3);
+    z-index: 50;
+}
+
+.damage-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.damage-value {
+    font-size: 36px;
+    font-weight: 900;
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-shadow: 0 0 15px rgba(142, 255, 113, 0.8);
+    line-height: 1;
+}
+
+.damage-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.damage-btn {
+    background: var(--surface-container-highest);
+    color: var(--primary);
+    border: 2px solid rgba(142, 255, 113, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.damage-btn:hover {
+    background: rgba(142, 255, 113, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(142, 255, 113, 0.4);
+    transform: translateY(-2px);
+}
+
+.damage-btn:active {
+    transform: translateY(0);
+}
+
+.damage-btn-large {
+    background: linear-gradient(135deg, var(--primary), #2ff801);
+    color: #064200;
+    border-color: var(--primary);
+    box-shadow: 0 0 20px rgba(142, 255, 113, 0.4);
+}
+
+.damage-btn-large:hover {
+    box-shadow: 0 0 30px rgba(142, 255, 113, 0.6);
+}
+
+.threat-label {
+    font-size: 9px;
+    font-weight: 900;
+    color: #ffd2c8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.threat-level {
+    font-size: 20px;
+    font-weight: 900;
+    color: white;
+    font-style: italic;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.threat-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.threat-fill {
+    height: 100%;
+    width: 75%;
+    background: var(--error);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Defense Zone */
+.defense-zone {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, var(--surface-container) 60%, transparent);
+    padding: 80px 24px 32px;
+    z-index: 50;
+}
+
+.defender-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 600px;
+    margin: 0 auto 24px;
+}
+
+.defender-slot {
+    aspect-ratio: 1;
+    background: var(--surface-container-highest);
+    border: 2px solid rgba(142, 255, 113, 0.2);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+}
+
+.defender-slot:hover {
+    border-color: rgba(142, 255, 113, 0.5);
+    box-shadow: 0 0 20px rgba(142, 255, 113, 0.3);
+    transform: translateY(-4px);
+}
+
+.defender-slot.selected {
+    border-color: var(--primary);
+    background: rgba(142, 255, 113, 0.1);
+    box-shadow: 0 0 30px rgba(142, 255, 113, 0.4);
+}
+
+.slot-turret {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 12px;
+}
+
+.slot-turret img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.slot-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.slot-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--on-background);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-transform: uppercase;
+}
+
+.slot-cost {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--on-surface-variant);
+}
+
+/* Start Wave Button */
+.start-wave-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--primary), #2ff801);
+    color: #064200;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 0 25px rgba(142, 255, 113, 0.4), 0 8px 0 #064200;
+    transition: all 0.3s ease;
+}
+
+.start-wave-btn:hover {
+    box-shadow: 0 0 35px rgba(142, 255, 113, 0.6), 0 8px 0 #064200;
+    transform: translateY(-2px);
+}
+
+.start-wave-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 25px rgba(142, 255, 113, 0.4), 0 4px 0 #064200;
+}
+
+.start-wave-btn .material-symbols-outlined {
+    font-size: 32px;
+}
+
+/* Stats Panel */
+.stats-panel {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    background: rgba(23, 23, 47, 0.8);
+    backdrop-filter: blur(12px);
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(142, 255, 113, 0.2);
+    z-index: 60;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--error);
+}
+
+.stat-item .material-symbols-outlined {
+    color: var(--error);
+    font-size: 24px;
+}

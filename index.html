@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONSTER TIDE - 塔防射击</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- TopAppBar -->
+    <header class="game-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="player-avatar">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7CHduJYczcXcUpmQBvnAvS__aHvhPBQ_MlcJpbOvFamdMYfPocWUo4geAiLdLd7OnXxz9A9Y_t8gPzpWhY7AJkV9tg5z654AdD8ia_CKJo3RlmtfHk5WxvV5Uzs-WXZhcr75jJc2uVCgdzCfowUC6ou6nzappzoHhAySv7bvaemwr6sewjpflmGv0pHwRUx6xyhXdApz-ZbNwo56bYuZfy1BdwaykrLqhiCKbGQT4Hx7HgF5aFoSk21EZ0YcJhiq6j1Lra8ND9ruK" alt="Player">
+                </div>
+                <div class="header-title">
+                    <h1>MONSTER TIDE</h1>
+                    <div class="level-bar">
+                        <div class="level-progress"></div>
+                    </div>
+                    <span class="level-text">LVL 42</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="energy-btn">
+                    <span id="gold">100</span>⚡
+                </button>
+                <span class="wave-text">Wave <span id="wave">1</span> / 20</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="game-main">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Threat Indicator -->
+        <div class="threat-indicator">
+            <span class="threat-label">威胁等级</span>
+            <span class="threat-level">ACTIVE</span>
+            <div class="threat-bar">
+                <div class="threat-fill"></div>
+            </div>
+        </div>
+
+        <!-- Damage Control Panel -->
+        <div class="damage-control">
+            <span class="damage-label">攻击力</span>
+            <div class="damage-value" id="damage-display">50</div>
+            <div class="damage-buttons">
+                <button class="damage-btn" id="damage-decrease">-10</button>
+                <button class="damage-btn" id="damage-increase">+10</button>
+                <button class="damage-btn damage-btn-large" id="damage-max">MAX</button>
+            </div>
+        </div>
+
+        <!-- Defense Zone UI -->
+        <div class="defense-zone">
+            <div class="defender-slots">
+                <div class="defender-slot" data-type="shooter">
+                    <div class="slot-turret">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI8cHmM0RzcXpemH0Sgjgxr-wJuX323HP0QOZ5s5SIB1A1hoDJI893BGnOvxqQeifr1nOajOZTiHad0qQHgzOHeSCuMY9vDoeRBfJ5EtHBEwkhi1balECmy7TyyH-cmkMApdE7QE4QBVykOMXaU7YarAOlthGdARx1V8q2IYPP0GHLnw-7KuoAKm5MKcCWdnaWLnixmL27xDUyNwFeUJ960ufKhbhBNwl57N0gBp-F3VKpzm1UZb-6XyHSGCt1U-pgD0Xjx9MEIfnx" alt="Turret">
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-name">快速炮</span>
+                        <span class="slot-cost">50⚡</span>
+                    </div>
+                </div>
+                <div class="defender-slot" data-type="sniper">
+                    <div class="slot-turret">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgfZR2FCxnUYJvba5CgXJF7y22ze3By2MvGM7eik1JALf-6Rdxvp8JBfv1Ycf5emkwN_VXGWbyYIEBXylgB7dfcfXLkAqLNUF7dLo4o8K6cJodhjHJCnZh9jZraPCp7ydGbxnz7tXea6QLKo4arO8Uz-xX4EI0kaLHZAhYIQ6h6o205giPq0E2Sx79PqnGBin--8WUSOyB8epIJiWO-XivPQe6Mu7c4V2bsVf1zXG_rw7902RjIdB1b01kPheka_6Gtu8VY7ijQutG" alt="Turret">
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-name">狙击炮</span>
+                        <span class="slot-cost">80⚡</span>
+                    </div>
+                </div>
+                <div class="defender-slot" data-type="cannon">
+                    <div class="slot-turret">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI8cHmM0RzcXpemH0Sgjgxr-wJuX323HP0QOZ5s5SIB1A1hoDJI893BGnOvxqQeifr1nOajOZTiHad0qQHgzOHeSCuMY9vDoeRBfJ5EtHBEwkhi1balECmy7TyyH-cmkMApdE7QE4QBVykOMXaU7YarAOlthGdARx1V8q2IYPP0GHLnw-7KuoAKm5MKcCWdnaWLnixmL27xDUyNwFeUJ960ufKhbhBNwl57N0gBp-F3VKpzm1UZb-6XyHSGCt1U-pgD0Xjx9MEIfnx" alt="Turret">
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-name">重炮</span>
+                        <span class="slot-cost">120⚡</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="start-wave" class="start-wave-btn">
+                <span class="material-symbols-outlined">play_arrow</span>
+                开始波次
+            </button>
+
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <span class="material-symbols-outlined">favorite</span>
+                    <span id="lives">10</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="game.js"></script>
+</body>
+</html>
