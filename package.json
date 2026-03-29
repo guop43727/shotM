@@ -1,0 +1,27 @@
+{
+  "name": "shotm",
+  "version": "1.0.0",
+  "description": "直接在浏览器中打开 `index.html` 文件即可开始游戏。",
+  "main": "game.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guop43727/shotM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/guop43727/shotM/issues"
+  },
+  "homepage": "https://github.com/guop43727/shotM#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

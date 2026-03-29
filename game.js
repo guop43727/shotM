@@ -224,9 +224,9 @@ function drawPlayer() {
 
         // 只给中间的绘制武器
         if (i === Math.floor(player.count / 2)) {
-            ctx.fillStyle = weaponTypes[player.weapon.type].color;
+            ctx.fillStyle = player.weapon.color || weaponTypes[player.weapon.type]?.color || '#ff7948';
             ctx.shadowBlur = 10;
-            ctx.shadowColor = weaponTypes[player.weapon.type].color;
+            ctx.shadowColor = player.weapon.color || weaponTypes[player.weapon.type]?.color || '#ff7948';
             ctx.fillRect(8, -10, 15, 4);
             ctx.fillRect(20, -11, 5, 6);
 
@@ -401,14 +401,20 @@ class WeaponDrop {
                 // 获得超级武器后，增加怪物生成速度！
                 adjustDifficulty();
 
-                // 设置持续时间
+                // 设置持续时间（取消之前的定时器，避免旧武器的定时器影响新武器）
+                if (player.weapon._timer) {
+                    clearTimeout(player.weapon._timer);
+                    player.weapon._timer = null;
+                }
                 if (weapon.duration > 0) {
-                    setTimeout(() => {
-                        if (player.weapon.type === this.weaponType) {
+                    const equippedType = this.weaponType;
+                    player.weapon._timer = setTimeout(() => {
+                        if (player.weapon.type === equippedType) {
                             player.weapon.type = 'rifle';
                             player.weapon.fireRate = weaponTypes.rifle.fireRate;
                             player.weapon.damage = weaponTypes.rifle.damage;
                             player.weapon.bulletCount = weaponTypes.rifle.bulletCount;
+                            player.weapon._timer = null;
                             updateDamageDisplay();
                             // 武器失效后，恢复正常难度
                             adjustDifficulty();
@@ -430,7 +436,12 @@ class NumberGate {
         this.z = 0;
         this.laneOffset = (Math.random() - 0.5) * 80;
         this.speed = 0.0015; // 从0.003改到0.0015
-        this.number = -5 - Math.floor(Math.random() * 10); // 初始负数
+        // 30%概率生成正数门(+1到+5)，70%概率生成负数门(-1到-8)
+        if (Math.random() < 0.3) {
+            this.number = 1 + Math.floor(Math.random() * 5);
+        } else {
+            this.number = -1 - Math.floor(Math.random() * 8);
+        }
         this.hit = false;
     }
 
@@ -485,9 +496,9 @@ class NumberGate {
         // 检测是否到达玩家
         if (this.z > 0.9 && !this.hit) {
             this.hit = true;
-            // 改变玩家数量
+            // 改变玩家数量（累加门的数字，而非替换）
             const oldCount = player.count;
-            player.count = Math.max(1, this.number);
+            player.count = Math.max(1, player.count + this.number);
 
             // 如果玩家数量增加了，增加怪物生成速度
             if (player.count > oldCount) {
@@ -529,9 +540,9 @@ class Bullet {
 
         ctx.save();
         ctx.shadowBlur = 10;
-        ctx.shadowColor = weaponTypes[player.weapon.type].color;
+        ctx.shadowColor = player.weapon.color || weaponTypes[player.weapon.type]?.color || '#ff7948';
 
-        ctx.fillStyle = weaponTypes[player.weapon.type].color;
+        ctx.fillStyle = player.weapon.color || weaponTypes[player.weapon.type]?.color || '#ff7948';
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -542,20 +553,30 @@ class Bullet {
     update() {
         this.progress += this.speed;
 
-        if (this.progress >= 1) {
-            // 检测击中数字门
+        // 每帧检测击中数字门（沿飞行路径判断，不只在终点）
+        if (!this._gateHitDone) {
+            let targetPos;
+            if (this.target && this.target.getScreenPosition) {
+                targetPos = this.target.getScreenPosition();
+            } else {
+                targetPos = { x: this.x, y: 0 };
+            }
+            const bulletX = player.x + (targetPos.x - player.x + this.spread) * this.progress;
+            const bulletY = player.y - 20 + (targetPos.y - (player.y - 20)) * this.progress;
+
             game.numberGates.forEach(gate => {
                 if (!gate.hit && gate.z > 0.3 && gate.z < 0.9) {
                     const gatePos = gate.getScreenPosition();
-                    const bulletX = player.x + (gatePos.x - player.x + this.spread) * this.progress;
-                    const bulletY = player.y - 20 + (gatePos.y - (player.y - 20)) * this.progress;
                     const dist = Math.hypot(bulletX - gatePos.x, bulletY - gatePos.y);
                     if (dist < 40 * gatePos.scale) {
                         gate.onHit();
+                        this._gateHitDone = true; // 每颗子弹只命中一次
                     }
                 }
             });
+        }
 
+        if (this.progress >= 1) {
             // 击中敌人 - 使用子弹自己的伤害值
             if (this.target && this.target.hp !== undefined && this.target.hp > 0) {
                 this.target.hp -= this.damage;
@@ -711,7 +732,18 @@ function updateDamageDisplay() {
     }
 }
 
+let gameOverFlag = false;
+
+function triggerGameOver() {
+    gameOverFlag = true;
+    setTimeout(() => {
+        alert('游戏结束！得分: ' + game.score);
+        location.reload();
+    }, 50);
+}
+
 function gameLoop(time) {
+    if (gameOverFlag) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawRoad();
@@ -738,14 +770,15 @@ function gameLoop(time) {
             game.gold += 10;
             game.score += 100;
             updateUI();
+            const dropPos = e.getScreenPosition();
+            weaponDropIntegration.createDrop(dropPos.x, e.z);
             return false;
         }
         if (e.update()) {
             game.lives--;
             updateUI();
             if (game.lives <= 0) {
-                alert('游戏结束！得分: ' + game.score);
-                location.reload();
+                triggerGameOver();
             }
             return false;
         }
@@ -765,12 +798,12 @@ function gameLoop(time) {
 
     // 显示当前武器
     ctx.save();
-    ctx.fillStyle = weaponTypes[player.weapon.type].color;
+    ctx.fillStyle = player.weapon.color || weaponTypes[player.weapon.type]?.color || '#ff7948';
     ctx.font = 'bold 16px "Plus Jakarta Sans"';
     ctx.textAlign = 'left';
     ctx.shadowBlur = 10;
-    ctx.shadowColor = weaponTypes[player.weapon.type].color;
-    ctx.fillText('武器: ' + weaponTypes[player.weapon.type].name, 20, canvas.height - 20);
+    ctx.shadowColor = player.weapon.color || weaponTypes[player.weapon.type]?.color || '#ff7948';
+    ctx.fillText('武器: ' + (player.weapon.name || weaponTypes[player.weapon.type]?.name || player.weapon.type), 20, canvas.height - 20);
 
     // 显示攻击力
     ctx.fillStyle = '#ff7948';
@@ -794,10 +827,18 @@ function gameLoop(time) {
     // 实时更新右侧面板的攻击力显示
     updateDamageDisplay();
 
+    // 检测武器掉落拾取
+    weaponDropIntegration.checkCollection();
+
+    // 更新和渲染合成动画
+    weaponMergeAnimation.update();
+    weaponMergeAnimation.render(ctx);
+
     if (game.waveActive && game.enemies.length === 0 && alreadySpawned >= totalToSpawn) {
         game.waveActive = false;
         game.wave++;
         updateUI();
+        weaponWaveSelect.show();
     }
 
     requestAnimationFrame(gameLoop);

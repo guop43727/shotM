@@ -1,0 +1,80 @@
+version: "1.0"
+change: weapon-integration
+phase: L3_deliver
+generated_at: "2026-03-29T10:00:00+08:00"
+implementer_units: 1
+review_rounds: 1
+
+summary:
+  status: DELIVERED
+  all_tests_pass: true
+  blocking_findings_resolved: 5
+  total_tests: 23
+  passed_tests: 23
+
+implementation_units:
+  - id: "001"
+    name: INTEGRATION
+    files_modified:
+      - path: game.js
+        changes:
+          - "line 741: createDrop 参数从 (dropPos.x, dropPos.y) 改为 (dropPos.x, e.z)"
+          - "line 227/229: weaponTypes[type].color 改为 player.weapon.color 带 ?. 后备"
+          - "line 532/534: 同上"
+          - "line 770/774/775: 同上，name 同样改为 player.weapon.name"
+      - path: weaponDropIntegration.js
+        changes:
+          - "完全重写：改用 this.drops 独立数组（避免与 WeaponDrop 类冲突）"
+          - "createDrop 参数改为 (x, z)：存储 z 轴值而非屏幕 y"
+          - "checkCollection：z 轴推进机制（每帧 +0.004），z≥0.85 且 dx<80 时拾取"
+          - "超出范围（z>1.1）自动丢弃"
+      - path: weaponWaveSelect.js
+        changes:
+          - "selectWeapon：player.weapon 新增 color 和 name 字段，从 weaponConfig 读取"
+    files_created:
+      - path: tests/weaponIntegration.test.js
+        description: "10 个测试（8 单元 + 2 集成）"
+
+findings_resolved:
+  - id: FND-ARCH-001
+    description: "weaponDropIntegration 写入 game.weaponDrops 导致 WeaponDrop.update() TypeError"
+    resolution: "改用 this.drops 独立数组"
+    status: FIXED
+
+  - id: FND-ARCH-002
+    description: "WeaponDrop.update 和 weaponDropIntegration.checkCollection 双重操作 game.weaponDrops"
+    resolution: "分离数组后两系统独立运行"
+    status: FIXED
+
+  - id: FND-ARCH-003
+    description: "weaponWaveSelect 选择进化武器后 game.js 渲染崩溃（weaponTypes 无进化类型）"
+    resolution: "player.weapon 存储 color/name；渲染代码改为优先使用 player.weapon.color/name"
+    status: FIXED
+
+  - id: FND-FUNC-001
+    description: "40px 拾取半径在运行时不可达（y 轴落差过大）"
+    resolution: "改为 z 轴推进机制 + x 轴车道宽度检测（laneWidth=80px）"
+    status: FIXED
+
+  - id: FND-BUG-001
+    description: "createDrop(e.x, e.y) 传入 undefined（Enemy 无 .x/.y 属性）"
+    resolution: "改为 getScreenPosition().x + e.z"
+    status: FIXED
+
+test_results:
+  - suite: weaponManager.test.js
+    total: 13
+    passed: 13
+    failed: 0
+
+  - suite: weaponIntegration.test.js
+    total: 10
+    passed: 10
+    failed: 0
+
+overall:
+  total: 23
+  passed: 23
+  failed: 0
+
+next_phase: L4_verification

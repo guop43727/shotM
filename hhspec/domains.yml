@@ -1,0 +1,40 @@
+domains:
+  CORE:
+    code: CORE
+    name: 核心游戏系统
+    description: 游戏循环、状态管理、Canvas 渲染
+
+  PLAYER:
+    code: PLAYER
+    name: 玩家系统
+    description: 玩家角色、移动控制、武器装备
+
+  WEAPON:
+    code: WEAPON
+    name: 武器系统
+    description: 武器类型定义、武器掉落、武器切换、火力计算
+
+  ENEMY:
+    code: ENEMY
+    name: 敌人系统
+    description: 怪物生成、AI 行为、血量管理
+
+  COMBAT:
+    code: COMBAT
+    name: 战斗系统
+    description: 子弹发射、碰撞检测、伤害计算
+
+  GATE:
+    code: GATE
+    name: 数字门系统
+    description: 数字门生成、射击改数、碰撞逻辑
+
+  DIFFICULTY:
+    code: DIFF
+    name: 难度系统
+    description: 动态难度调整、火力等级计算、怪物生成速率
+
+  UI:
+    code: UI
+    name: 界面系统
+    description: HUD 渲染、状态显示、赛博朋克 UI
