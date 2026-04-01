@@ -142,22 +142,76 @@ body::after {
 
 .header-right {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-icon {
+    font-size: 14px;
+    margin-right: 4px;
+}
+
+.score-chip {
+    background: var(--surface-container-highest);
+    color: #ffeb3b;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 900;
+    font-size: 14px;
+    border: 1px solid rgba(255, 235, 59, 0.3);
+}
+
+.wave-chip {
+    background: var(--surface-container-highest);
+    color: var(--tertiary);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 900;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 121, 72, 0.3);
+}
+
+.wave-sep {
+    opacity: 0.5;
+    margin: 0 2px;
 }
 
 .energy-btn {
     background: var(--surface-container-highest);
     color: var(--primary-glow);
-    padding: 8px 16px;
+    padding: 8px 14px;
     border-radius: 999px;
-    border: none;
+    border: 1px solid rgba(57, 255, 20, 0.3);
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 900;
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.weapon-btn {
+    background: rgba(255, 121, 72, 0.15);
+    border: 1px solid rgba(255, 121, 72, 0.4);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    color: var(--tertiary);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .energy-btn:hover {
@@ -165,12 +219,10 @@ body::after {
     filter: brightness(1.25);
 }
 
-.wave-text {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--tertiary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.weapon-btn:hover {
+    background: rgba(255, 121, 72, 0.25);
+    border-color: var(--tertiary);
+    box-shadow: 0 0 12px rgba(255, 121, 72, 0.3);
 }
 
 /* Main Game Area */
@@ -197,35 +249,36 @@ body::after {
 .threat-indicator {
     position: fixed;
     top: 120px;
-    right: 24px;
+    left: 24px;
     background: rgba(185, 41, 2, 0.4);
     backdrop-filter: blur(24px);
-    padding: 16px;
-    border-radius: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 115, 81, 0.2);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 4px;
-    box-shadow: 0 0 30px rgba(255, 115, 81, 0.3);
+    gap: 8px;
+    box-shadow: 0 0 24px rgba(255, 115, 81, 0.2);
     z-index: 50;
+    min-width: 140px;
 }
 
 /* Damage Control Panel */
 .damage-control {
     position: fixed;
-    top: 280px;
-    right: 24px;
-    background: rgba(142, 255, 113, 0.15);
+    top: 172px;
+    left: 24px;
+    background: rgba(142, 255, 113, 0.12);
     backdrop-filter: blur(24px);
-    padding: 16px;
-    border-radius: 16px;
-    border: 2px solid rgba(142, 255, 113, 0.3);
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(142, 255, 113, 0.25);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 0 30px rgba(142, 255, 113, 0.3);
+    gap: 12px;
+    box-shadow: 0 0 24px rgba(142, 255, 113, 0.2);
     z-index: 50;
 }
 
@@ -239,18 +292,19 @@ body::after {
 }
 
 .damage-value {
-    font-size: 36px;
+    font-size: 28px;
     font-weight: 900;
     color: #ffffff;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    text-shadow: 0 0 15px rgba(142, 255, 113, 0.8);
+    text-shadow: 0 0 12px rgba(142, 255, 113, 0.7);
     line-height: 1;
+    min-width: 48px;
+    text-align: center;
 }
 
 .damage-buttons {
     display: flex;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 6px;
 }
 
 .damage-btn {
@@ -306,12 +360,12 @@ body::after {
 }
 
 .threat-bar {
-    width: 100%;
+    flex: 1;
     height: 4px;
     background: rgba(0, 0, 0, 0.4);
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 4px;
+    min-width: 48px;
 }
 
 .threat-fill {
@@ -371,6 +425,31 @@ body::after {
     border-color: var(--primary);
     background: rgba(142, 255, 113, 0.1);
     box-shadow: 0 0 30px rgba(142, 255, 113, 0.4);
+}
+
+.defender-slot.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 900;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.defender-slot.insufficient {
+    animation: slot-shake 0.4s ease;
+    border-color: var(--error) !important;
+    box-shadow: 0 0 20px rgba(255, 115, 81, 0.4) !important;
+}
+
+@keyframes slot-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
 }
 
 .slot-turret {
@@ -471,4 +550,838 @@ body::after {
 .stat-item .material-symbols-outlined {
     color: var(--error);
     font-size: 24px;
+}
+
+/* Weapon Modal (COMP-001) */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: var(--surface-container-high);
+    margin: 3% auto;
+    padding: 24px;
+    border: 2px solid var(--primary);
+    border-radius: 16px;
+    width: 85%;
+    max-width: 900px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(142,255,113,0.4);
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    color: var(--primary);
+    font-size: 24px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--on-background);
+    font-size: 32px;
+    cursor: pointer;
+}
+
+.tab-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--outline-variant);
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: var(--on-surface-variant);
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.tab-btn:hover {
+    color: var(--primary);
+    background: rgba(142,255,113,0.05);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    text-shadow: 0 0 8px rgba(142,255,113,0.4);
+}
+
+/* Inventory Tab (COMP-002) */
+.inventory-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--surface-container);
+    border-radius: 8px;
+}
+
+.inventory-filters select {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--surface-container-highest);
+    color: var(--on-background);
+    border: 1px solid var(--outline-variant);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.weapon-grid-inner {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+}
+
+.weapon-card {
+    background: var(--surface-container);
+    border: 2px solid var(--outline-variant);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.weapon-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* BLOCK-004: BEM naming convention for weapon card states */
+.weapon-card.weapon-card--owned {
+    border-color: var(--primary);
+    box-shadow: 0 0 18px rgba(142,255,113,0.35);
+}
+
+.weapon-card.weapon-card--can-merge {
+    border-color: #ffeb3b;
+    box-shadow: 0 0 20px rgba(255,235,59,0.5);
+    animation: pulse-merge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-merge {
+    0%, 100% { box-shadow: 0 0 20px rgba(255,235,59,0.5); }
+    50% { box-shadow: 0 0 30px rgba(255,235,59,0.7); }
+}
+
+.weapon-card.weapon-card--locked {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.weapon-card.weapon-card--equipped {
+    border-color: var(--secondary);
+    box-shadow: 0 0 20px rgba(0,227,253,0.4);
+}
+
+/* Legacy support for old class names */
+.weapon-card.owned {
+    border-color: var(--primary);
+    box-shadow: 0 0 18px rgba(142,255,113,0.35);
+}
+
+.weapon-card.can-merge {
+    border-color: #ffeb3b;
+    box-shadow: 0 0 20px rgba(255,235,59,0.5);
+    animation: pulse-merge 2s ease-in-out infinite;
+}
+
+.weapon-card.locked {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.weapon-card.equipped {
+    border-color: var(--secondary);
+    box-shadow: 0 0 20px rgba(0,227,253,0.4);
+}
+
+.weapon-icon-wrapper {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.weapon-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.tier-badge {
+    position: absolute;
+    top: -6px;
+    right: 20%;
+    background: var(--surface-container-highest);
+    color: var(--primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 800;
+    border: 1px solid var(--primary);
+}
+
+.weapon-info {
+    margin-bottom: 8px;
+}
+
+.weapon-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--on-background);
+}
+
+.weapon-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    margin: 2px;
+    text-transform: uppercase;
+}
+
+.badge--equipped {
+    background: var(--secondary);
+    color: var(--background);
+}
+
+.badge--can-merge {
+    background: #ffeb3b;
+    color: #333;
+}
+
+.badge--locked {
+    background: var(--outline-variant);
+    color: var(--on-surface-variant);
+}
+
+#evolution-canvas {
+    display: block;
+    margin: 0 auto 20px;
+    background: var(--surface-container);
+    border-radius: 8px;
+}
+
+.fusion-btn, .synthesis-btn {
+    background: var(--primary);
+    color: var(--background);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+}
+
+.fusion-btn:hover, .synthesis-btn:hover {
+    box-shadow: 0 0 20px rgba(142,255,113,0.5);
+}
+
+.synthesis-btn--max {
+    background: linear-gradient(135deg, #8eff71, #00e3fd);
+    color: #0a0a0a;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+}
+
+.synthesis-btn--max:hover:not(:disabled) {
+    box-shadow: 0 0 28px rgba(0,227,253,0.6);
+    transform: scale(1.03);
+}
+
+.synthesis-panel {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.synthesis-panel label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--on-background);
+}
+
+.synthesis-panel select {
+    width: 100%;
+    padding: 10px;
+    background: var(--surface-container);
+    color: var(--on-background);
+    border: 2px solid var(--outline-variant);
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+#synthesis-info {
+    background: var(--surface-container);
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+#synthesis-info p {
+    margin-bottom: 10px;
+}
+
+/* .weapon-btn — unified above in header section */
+.weapon-btn-legacy-noop {
+    /* removed duplicate, styles live in .weapon-btn above */
+}
+
+/* Wave Select Modal */
+#wave-select-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.wave-select-content {
+    background: var(--surface-container-high);
+    border: 2px solid var(--primary);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 600px;
+}
+
+.wave-select-content h2 {
+    color: var(--primary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Weapon Notification (BLOCK-009: UI feedback) */
+.weapon-notification {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: var(--surface-container-high);
+    border: 2px solid var(--primary);
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: var(--primary);
+    font-weight: 600;
+    animation: slideIn 0.3s, slideOut 0.3s 1.7s;
+    z-index: 3000;
+}
+
+.weapon-notification.notification-error {
+    border-color: var(--error);
+    color: var(--error);
+    background: rgba(255, 115, 81, 0.1);
+}
+
+.weapon-notification.notification-success {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(142, 255, 113, 0.1);
+}
+
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+/* Tab content base */
+.tab-content {
+    min-height: 300px;
+}
+
+/* Evolution Tree Tab (COMP-003) */
+.evolution-tab-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--surface-container);
+    border: 1px solid var(--outline-variant);
+}
+
+#evolution-tree-canvas {
+    display: block;
+    max-width: 100%;
+}
+
+.tree-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.tree-controls button {
+    background: var(--surface-container-highest);
+    color: var(--on-background);
+    border: 1px solid var(--outline-variant);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tree-controls button:hover {
+    background: rgba(142, 255, 113, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* Tree Tooltip (EH-017) */
+.tree-tooltip {
+    position: fixed;
+    background: var(--surface-container-high);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    padding: 10px 14px;
+    pointer-events: none;
+    z-index: 5000;
+    max-width: 200px;
+    box-shadow: 0 0 15px rgba(142, 255, 113, 0.3);
+}
+
+.tooltip-header {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 13px;
+    margin-bottom: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.tooltip-content p {
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    margin-bottom: 3px;
+}
+
+.tooltip-highlight {
+    color: #ffeb3b;
+    font-weight: 700;
+}
+
+/* Fusion button disabled state */
+.fusion-btn.disabled,
+.fusion-btn:disabled {
+    background: var(--outline-variant);
+    color: var(--on-surface-variant);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Synthesis Tab (COMP-004) */
+.synthesis-tab-inner {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.weapon-selector {
+    margin-bottom: 20px;
+}
+
+.weapon-selector label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--on-background);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.weapon-selector select,
+#synthesis-weapon-select {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface-container-highest);
+    color: var(--on-background);
+    border: 2px solid var(--outline-variant);
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.weapon-selector select:focus,
+#synthesis-weapon-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 8px rgba(142, 255, 113, 0.3);
+}
+
+.synthesis-info {
+    background: var(--surface-container);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--outline-variant);
+    margin-top: 8px;
+}
+
+.synthesis-target p,
+.synthesis-materials p {
+    margin-bottom: 10px;
+    color: var(--on-background);
+    font-size: 14px;
+}
+
+.synthesis-highlight {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.synthesis-action {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.synthesis-status {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.status-success {
+    color: var(--primary);
+    background: rgba(142, 255, 113, 0.1);
+    border: 1px solid rgba(142, 255, 113, 0.3);
+}
+
+.status-error {
+    color: var(--error);
+    background: rgba(255, 115, 81, 0.1);
+    border: 1px solid rgba(255, 115, 81, 0.3);
+}
+
+.synthesis-btn:disabled {
+    background: var(--outline-variant);
+    color: var(--on-surface-variant);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Synthesis Animation Overlay (EH-023, NFR-WEP-003) */
+.synthesis-animation-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    border-radius: 16px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.synthesis-animation-overlay.animate {
+    animation: synthesis-pulse 1.5s ease-in-out forwards;
+}
+
+@keyframes synthesis-pulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1.05); }
+    70% { opacity: 1; transform: scale(1.0); }
+    100% { opacity: 0; transform: scale(1.1); }
+}
+
+.animation-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 30px;
+    background: var(--surface-container-high);
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(142, 255, 113, 0.5);
+}
+
+.material-icons-anim {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.material-icon-anim {
+    font-size: 32px;
+    font-weight: 900;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-shadow: 0 0 15px currentColor;
+}
+
+.merge-arrow-anim {
+    font-size: 36px;
+    color: var(--primary);
+    font-weight: 900;
+    text-shadow: 0 0 15px rgba(142, 255, 113, 0.7);
+}
+
+.result-icon-anim {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-align: center;
+    text-shadow: 0 0 20px currentColor;
+}
+
+.glow-effect {
+    animation: glow-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow-pulse {
+    from { text-shadow: 0 0 10px currentColor; }
+    to { text-shadow: 0 0 30px currentColor, 0 0 50px currentColor; }
+}
+
+/* Weapon Details Panel (EH-009) */
+.weapon-details-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface-container-high);
+    border: 2px solid var(--secondary);
+    border-radius: 12px;
+    padding: 24px;
+    z-index: 1100;
+    min-width: 280px;
+    box-shadow: 0 0 30px rgba(0, 227, 253, 0.4);
+}
+
+.weapon-details-panel h3 {
+    color: var(--secondary);
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.tier-label {
+    color: var(--on-surface-variant);
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.stat-item-detail {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.stat-label {
+    color: var(--on-surface-variant);
+}
+
+.stat-value {
+    color: var(--on-background);
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.equip-button {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px;
+    background: var(--primary);
+    color: #064200;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.equip-button:hover {
+    box-shadow: 0 0 20px rgba(142, 255, 113, 0.5);
+}
+
+.close-details-button {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px;
+    background: var(--surface-container);
+    color: var(--on-surface-variant);
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.close-details-button:hover {
+    background: var(--surface-container-high);
+    color: var(--on-background);
+}
+
+/* Game Over Modal */
+.gameover-modal {
+    background: var(--surface-container-highest);
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 40px rgba(142, 255, 113, 0.3);
+    text-align: center;
+    padding: 40px;
+    max-width: 400px;
+    animation: modal-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gameover-modal h2 {
+    font-size: 48px;
+    color: var(--error);
+    text-shadow: 0 0 20px var(--error);
+    margin-bottom: 30px;
+}
+
+.gameover-stats {
+    margin: 30px 0;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 20px;
+    margin: 8px 0;
+    background: var(--surface-container);
+    border-radius: 8px;
+    font-size: 20px;
+}
+
+.stat-row span:last-child {
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.restart-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary);
+    color: var(--background);
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.restart-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px var(--primary);
+}
+
+/* Wave Clear Modal */
+.waveclear-modal {
+    background: var(--surface-container-highest);
+    border: 2px solid var(--secondary);
+    box-shadow: 0 0 40px rgba(0, 227, 253, 0.3);
+    text-align: center;
+    padding: 40px;
+    max-width: 400px;
+    animation: modal-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-enter {
+    from { opacity: 0; transform: scale(0.85) translateY(20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Number roll animation for stat values */
+.stat-row span:last-child.rolling {
+    animation: number-roll 0.6s ease-out;
+}
+
+@keyframes number-roll {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.waveclear-modal h2 {
+    font-size: 36px;
+    color: var(--primary);
+    text-shadow: 0 0 20px var(--primary);
+    margin-bottom: 16px;
+}
+
+.wave-clear-badge {
+    display: inline-block;
+    padding: 8px 24px;
+    background: var(--secondary);
+    color: var(--background);
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 24px;
 }

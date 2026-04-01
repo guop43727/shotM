@@ -21,21 +21,29 @@
                     <div class="level-bar">
                         <div class="level-progress"></div>
                     </div>
-                    <span class="level-text">LVL 42</span>
+                    <span class="level-text">LVL <span id="player-level">1</span></span>
                 </div>
             </div>
             <div class="header-right">
-                <button class="energy-btn">
-                    <span id="gold">100</span>⚡
-                </button>
-                <span class="wave-text">Wave <span id="wave">1</span> / 20</span>
+                <div class="header-stats">
+                    <button class="energy-btn">
+                        <span class="stat-icon">⚡</span><span id="gold">100</span>
+                    </button>
+                    <div class="score-chip">
+                        <span class="stat-icon">★</span><span id="score-display">0</span>
+                    </div>
+                    <div class="wave-chip">
+                        Wave <span id="wave">1</span><span class="wave-sep">/</span>20
+                    </div>
+                </div>
+                <button class="weapon-btn" id="weapon-btn">🔫 武器</button>
             </div>
         </div>
     </header>
 
     <!-- Main Game Container -->
     <main class="game-main">
-        <canvas id="game-canvas"></canvas>
+        <div id="game-container"></div>
 
         <!-- Threat Indicator -->
         <div class="threat-indicator">
@@ -103,6 +111,93 @@
         </div>
     </main>
 
-    <script src="game.js"></script>
-</body>
+    <!-- Weapon Modal (COMP-001) -->
+    <div id="weapon-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+        <div class="modal-content weapon-modal">
+            <div class="modal-header">
+                <h2 id="modal-title">武器管理</h2>
+                <button class="close-btn" aria-label="关闭">×</button>
+            </div>
+            <div class="tab-nav" role="tablist">
+                <button class="tab-btn active" data-tab="inventory" role="tab" aria-selected="true">库存</button>
+                <button class="tab-btn" data-tab="evolution" role="tab" aria-selected="false">进化树</button>
+                <button class="tab-btn" data-tab="synthesis" role="tab" aria-selected="false">合成</button>
+            </div>
+            <div id="inventory-tab" class="tab-content" role="tabpanel"></div>
+            <div id="evolution-tab" class="tab-content" style="display:none;" role="tabpanel"></div>
+            <div id="synthesis-tab" class="tab-content" style="display:none;" role="tabpanel"></div>
+        </div>
+    </div>
+
+    <!-- Wave Clear Modal -->
+    <div id="waveclear-modal" class="modal" style="display:none;">
+        <div class="modal-content waveclear-modal">
+            <h2>波次通关！</h2>
+            <div class="wave-clear-badge">Wave <span id="cleared-wave">1</span></div>
+            <div class="gameover-stats">
+                <div class="stat-row"><span>本波击杀</span><span id="wave-kills">0</span></div>
+                <div class="stat-row"><span>获得金币</span><span id="wave-gold">0</span></div>
+                <div class="stat-row"><span>总得分</span><span id="wave-score">0</span></div>
+            </div>
+            <button class="restart-btn" id="next-wave-btn">下一波 →</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameover-modal" class="modal" style="display:none;">
+        <div class="modal-content gameover-modal">
+            <h2>游戏结束</h2>
+            <div class="gameover-stats">
+                <div class="stat-row"><span>得分</span><span id="final-score">0</span></div>
+                <div class="stat-row"><span>最高分</span><span id="best-score">0</span></div>
+                <div class="stat-row"><span>波次</span><span id="final-wave">0</span></div>
+                <div class="stat-row"><span>击杀</span><span id="final-kills">0</span></div>
+            </div>
+            <button class="restart-btn" id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+    // Defender slot interaction: selection + insufficient-gold feedback
+    document.querySelectorAll('.defender-slot').forEach(slot => {
+      slot.addEventListener('click', () => {
+        const cost = parseInt(slot.querySelector('.slot-cost')?.textContent) || 0;
+        const goldEl = document.getElementById('gold');
+        const currentGold = parseInt(goldEl?.textContent) || 0;
+        if (cost > currentGold) {
+          slot.classList.remove('insufficient');
+          void slot.offsetWidth;
+          slot.classList.add('insufficient');
+          setTimeout(() => slot.classList.remove('insufficient'), 500);
+        } else {
+          document.querySelectorAll('.defender-slot').forEach(s => s.classList.remove('selected'));
+          slot.classList.toggle('selected');
+        }
+      });
+    });
+
+    // Modal stat rolling animation: trigger when modal becomes visible
+    function triggerStatRoll(modalEl) {
+      modalEl.querySelectorAll('.stat-row span:last-child').forEach((el, i) => {
+        el.classList.remove('rolling');
+        void el.offsetWidth;
+        setTimeout(() => el.classList.add('rolling'), i * 120);
+      });
+    }
+
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(m => {
+        if (m.type === 'attributes' && m.attributeName === 'style') {
+          const el = m.target;
+          if (el.style.display === 'flex') triggerStatRoll(el);
+        }
+      });
+    });
+
+    ['waveclear-modal', 'gameover-modal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el, { attributes: true });
+    });
+    </script>
 </html>
