@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONSTER TIDE - 塔防射击</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-qfOecrdk.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/vendor-DlholqvV.js">
+  <link rel="modulepreload" crossorigin href="./assets/game-BTX95UPb.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-eUxR8Wgl.css">
+</head>
+<body>
+    <!-- TopAppBar -->
+    <header class="game-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="player-avatar">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7CHduJYczcXcUpmQBvnAvS__aHvhPBQ_MlcJpbOvFamdMYfPocWUo4geAiLdLd7OnXxz9A9Y_t8gPzpWhY7AJkV9tg5z654AdD8ia_CKJo3RlmtfHk5WxvV5Uzs-WXZhcr75jJc2uVCgdzCfowUC6ou6nzappzoHhAySv7bvaemwr6sewjpflmGv0pHwRUx6xyhXdApz-ZbNwo56bYuZfy1BdwaykrLqhiCKbGQT4Hx7HgF5aFoSk21EZ0YcJhiq6j1Lra8ND9ruK" alt="Player">
+                </div>
+                <div class="header-title">
+                    <h1>MONSTER TIDE</h1>
+                    <div class="level-bar">
+                        <div class="level-progress"></div>
+                    </div>
+                    <span class="level-text">LVL <span id="player-level">1</span></span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="energy-btn">
+                    <span id="gold">100</span>⚡
+                </button>
+                <button class="weapon-btn" id="weapon-btn">🔫</button>
+                <span class="wave-text">Wave <span id="wave">1</span> / 20</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="game-main">
+        <div id="game-container"></div>
+
+        <!-- Threat Indicator -->
+        <div class="threat-indicator">
+            <span class="threat-label">威胁等级</span>
+            <span class="threat-level">ACTIVE</span>
+            <div class="threat-bar">
+                <div class="threat-fill"></div>
+            </div>
+        </div>
+
+        <!-- Damage Control Panel -->
+        <div class="damage-control">
+            <span class="damage-label">攻击力</span>
+            <div class="damage-value" id="damage-display">50</div>
+            <div class="damage-buttons">
+                <button class="damage-btn" id="damage-decrease">-10</button>
+                <button class="damage-btn" id="damage-increase">+10</button>
+                <button class="damage-btn damage-btn-large" id="damage-max">MAX</button>
+            </div>
+        </div>
+
+        <!-- Defense Zone UI -->
+        <div class="defense-zone">
+            <div class="defender-slots">
+                <div class="defender-slot" data-type="shooter">
+                    <div class="slot-turret">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI8cHmM0RzcXpemH0Sgjgxr-wJuX323HP0QOZ5s5SIB1A1hoDJI893BGnOvxqQeifr1nOajOZTiHad0qQHgzOHeSCuMY9vDoeRBfJ5EtHBEwkhi1balECmy7TyyH-cmkMApdE7QE4QBVykOMXaU7YarAOlthGdARx1V8q2IYPP0GHLnw-7KuoAKm5MKcCWdnaWLnixmL27xDUyNwFeUJ960ufKhbhBNwl57N0gBp-F3VKpzm1UZb-6XyHSGCt1U-pgD0Xjx9MEIfnx" alt="Turret">
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-name">快速炮</span>
+                        <span class="slot-cost">50⚡</span>
+                    </div>
+                </div>
+                <div class="defender-slot" data-type="sniper">
+                    <div class="slot-turret">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgfZR2FCxnUYJvba5CgXJF7y22ze3By2MvGM7eik1JALf-6Rdxvp8JBfv1Ycf5emkwN_VXGWbyYIEBXylgB7dfcfXLkAqLNUF7dLo4o8K6cJodhjHJCnZh9jZraPCp7ydGbxnz7tXea6QLKo4arO8Uz-xX4EI0kaLHZAhYIQ6h6o205giPq0E2Sx79PqnGBin--8WUSOyB8epIJiWO-XivPQe6Mu7c4V2bsVf1zXG_rw7902RjIdB1b01kPheka_6Gtu8VY7ijQutG" alt="Turret">
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-name">狙击炮</span>
+                        <span class="slot-cost">80⚡</span>
+                    </div>
+                </div>
+                <div class="defender-slot" data-type="cannon">
+                    <div class="slot-turret">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI8cHmM0RzcXpemH0Sgjgxr-wJuX323HP0QOZ5s5SIB1A1hoDJI893BGnOvxqQeifr1nOajOZTiHad0qQHgzOHeSCuMY9vDoeRBfJ5EtHBEwkhi1balECmy7TyyH-cmkMApdE7QE4QBVykOMXaU7YarAOlthGdARx1V8q2IYPP0GHLnw-7KuoAKm5MKcCWdnaWLnixmL27xDUyNwFeUJ960ufKhbhBNwl57N0gBp-F3VKpzm1UZb-6XyHSGCt1U-pgD0Xjx9MEIfnx" alt="Turret">
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-name">重炮</span>
+                        <span class="slot-cost">120⚡</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="start-wave" class="start-wave-btn">
+                <span class="material-symbols-outlined">play_arrow</span>
+                开始波次
+            </button>
+
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <span class="material-symbols-outlined">favorite</span>
+                    <span id="lives">10</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Weapon Modal (COMP-001) -->
+    <div id="weapon-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+        <div class="modal-content weapon-modal">
+            <div class="modal-header">
+                <h2 id="modal-title">武器管理</h2>
+                <button class="close-btn" aria-label="关闭">×</button>
+            </div>
+            <div class="tab-nav" role="tablist">
+                <button class="tab-btn active" data-tab="inventory" role="tab" aria-selected="true">库存</button>
+                <button class="tab-btn" data-tab="evolution" role="tab" aria-selected="false">进化树</button>
+                <button class="tab-btn" data-tab="synthesis" role="tab" aria-selected="false">合成</button>
+            </div>
+            <div id="inventory-tab" class="tab-content" role="tabpanel"></div>
+            <div id="evolution-tab" class="tab-content" style="display:none;" role="tabpanel"></div>
+            <div id="synthesis-tab" class="tab-content" style="display:none;" role="tabpanel"></div>
+        </div>
+    </div>
+
+    <!-- Wave Clear Modal -->
+    <div id="waveclear-modal" class="modal" style="display:none;">
+        <div class="modal-content waveclear-modal">
+            <h2>波次通关！</h2>
+            <div class="wave-clear-badge">Wave <span id="cleared-wave">1</span></div>
+            <div class="gameover-stats">
+                <div class="stat-row"><span>本波击杀</span><span id="wave-kills">0</span></div>
+                <div class="stat-row"><span>获得金币</span><span id="wave-gold">0</span></div>
+                <div class="stat-row"><span>总得分</span><span id="wave-score">0</span></div>
+            </div>
+            <button class="restart-btn" id="next-wave-btn">下一波 →</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameover-modal" class="modal" style="display:none;">
+        <div class="modal-content gameover-modal">
+            <h2>游戏结束</h2>
+            <div class="gameover-stats">
+                <div class="stat-row"><span>得分</span><span id="final-score">0</span></div>
+                <div class="stat-row"><span>最高分</span><span id="best-score">0</span></div>
+                <div class="stat-row"><span>波次</span><span id="final-wave">0</span></div>
+                <div class="stat-row"><span>击杀</span><span id="final-kills">0</span></div>
+            </div>
+            <button class="restart-btn" id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+</body>
+</html>
