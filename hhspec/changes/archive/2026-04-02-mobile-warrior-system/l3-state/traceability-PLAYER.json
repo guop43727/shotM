@@ -1,0 +1,127 @@
+{
+  "unit_id": "IMPL-UNIT-PLAYER",
+  "unit_name": "PLAYER 移动系统",
+  "change_name": "mobile-warrior-system",
+  "implementer": "L3-Implementer",
+  "timestamp": "2026-04-02T00:00:00Z",
+  "coverage_summary": {
+    "total_constraints": 12,
+    "implemented": 12,
+    "blocked": 0,
+    "coverage_percentage": 100
+  },
+  "constraint_map": [
+    {
+      "constraint_id": "REQ-PLAYER-001",
+      "description": "按下 ArrowLeft 键时 player.x 以 player.speed px/帧速率向左减少，直至左边界 150",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 99, "note": "player.speed = 5 定义" },
+        { "file": "game.js", "line": 1033, "note": "keydown 设 keys.ArrowLeft = true" },
+        { "file": "game.js", "line": 1095, "note": "updatePlayerPosition: newX = player.x - speed" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-002",
+      "description": "按下 ArrowRight 键时 player.x 以 player.speed px/帧速率向右增加，直至右边界 750",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 99, "note": "player.speed = 5 定义" },
+        { "file": "game.js", "line": 1036, "note": "keydown 设 keys.ArrowRight = true" },
+        { "file": "game.js", "line": 1097, "note": "updatePlayerPosition: newX = player.x + speed" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-003",
+      "description": "松开 ArrowLeft 或 ArrowRight 时立即停止对应方向位置更新",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1042, "note": "keyup 设 keys.ArrowLeft = false" },
+        { "file": "game.js", "line": 1045, "note": "keyup 设 keys.ArrowRight = false" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-004",
+      "description": "player.x 超出 [150, 750] 时钳制到最近边界",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1103, "note": "leftBound = canvas.width/2 - GAME_CONSTANTS.ROAD_WIDTH" },
+        { "file": "game.js", "line": 1104, "note": "rightBound = canvas.width/2 + GAME_CONSTANTS.ROAD_WIDTH" },
+        { "file": "game.js", "line": 1105, "note": "player.x = Math.max(leftBound, Math.min(rightBound, newX))" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-005",
+      "description": "gamePaused 为 true 时跳过 player.x 移动更新",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1065, "note": "updatePlayerPosition: if (gamePaused) return" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-006",
+      "description": "gameOverFlag 为 true 时跳过 player.x 移动更新",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1070, "note": "updatePlayerPosition: if (gameOverFlag) return" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-007",
+      "description": "gameLoop 每帧在 drawPlayer() 之前更新 player.x，保证渲染与位置同步",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1175, "note": "gameLoop 中 updatePlayerPosition() 调用在 drawPlayer() 之前" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-008",
+      "description": "Bullet 创建时使用当前帧的 player.x 作为子弹初始 x 坐标（推断需求，无需新增代码）",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1175, "note": "updatePlayerPosition() 先于 autoFire(time) 执行，子弹起点自动跟随更新后的 player.x" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-010",
+      "description": "移动逻辑单帧处理时间 <= 1ms",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1063, "note": "updatePlayerPosition(): O(1) 操作，4 次条件判断 + 最多 2 次算术运算，理论增量 << 0.1ms" }
+      ]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-011",
+      "description": "移动控制代码不修改 weaponManager.js / weaponUI.js / weaponWaveSelect.js",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "note": "仅修改 game.js，其余 weapon*.js 文件未触及" }
+      ]
+    },
+    {
+      "constraint_id": "BS-007",
+      "description": "ArrowLeft + ArrowRight 同时按住时战士不移动（DD-003）",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1080, "note": "if (keys.ArrowLeft && keys.ArrowRight) return" }
+      ]
+    },
+    {
+      "constraint_id": "BS-009",
+      "description": "player.x 变为 NaN 时重置为初始值 450（DD-007）",
+      "status": "implemented",
+      "impl_location": [
+        { "file": "game.js", "line": 1085, "note": "if (isNaN(player.x)) { player.x = canvas.width / 2; return; }" }
+      ]
+    }
+  ],
+  "design_decisions_applied": [
+    { "id": "DD-001", "decision": "keys 状态对象 + gameLoop 每帧轮询", "applied_at": "game.js:110-112, updatePlayerPosition()" },
+    { "id": "DD-002", "decision": "边界由 GAME_CONSTANTS.ROAD_WIDTH 推导，不硬编码", "applied_at": "game.js:1103-1104" },
+    { "id": "DD-003", "decision": "双键同时按住时不移动", "applied_at": "game.js:1080-1082" },
+    { "id": "DD-004", "decision": "!game.waveActive 守卫禁止弹窗期间移动", "applied_at": "game.js:1075-1077" },
+    { "id": "DD-005", "decision": "player.speed = 5 作为 player 对象属性", "applied_at": "game.js:99" },
+    { "id": "DD-006", "decision": "独立 keydown/keyup 监听，职责单一", "applied_at": "game.js:1028-1047" },
+    { "id": "DD-007", "decision": "isNaN 检查 + 重置为 450", "applied_at": "game.js:1085-1088" }
+  ]
+}

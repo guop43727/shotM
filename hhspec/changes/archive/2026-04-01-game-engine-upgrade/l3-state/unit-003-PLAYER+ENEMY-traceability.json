@@ -1,0 +1,77 @@
+{
+  "unit_id": "UNIT-003",
+  "unit_name": "PLAYER+ENEMY",
+  "implementer": "L3-Implementer",
+  "timestamp": "2026-03-31T00:00:00Z",
+  "coverage": {
+    "total_constraints": 6,
+    "implemented": 6,
+    "blocked": 0,
+    "coverage_pct": 100
+  },
+  "constraints": [
+    {
+      "constraint_id": "REQ-PLAYER-001",
+      "description": "Player rendered with Phaser Graphics, 3-face box (front/left/right)",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/Player.js",
+      "impl_detail": "Player extends Phaser.GameObjects.Graphics; _drawCyberSoldier() calls _drawBox() for front+side+top faces",
+      "check_items": ["IMP-01", "IMP-02", "IMP-17"]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-002",
+      "description": "Player left/right movement via A/D or arrow keys",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/Player.js",
+      "impl_detail": "_setupInput() binds cursor keys + WASD; _handleMovement() applies MOVE_SPEED=220px/s with LANE_MIN_X/LANE_MAX_X bounds",
+      "check_items": ["IMP-02"]
+    },
+    {
+      "constraint_id": "REQ-PLAYER-003",
+      "description": "Player fires on Space; bullets use Phaser Sprite",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/Player.js, src/gameobjects/Bullet.js",
+      "impl_detail": "_handleFiring() emits 'player-fire' event with fire cooldown; Bullet extends Phaser.GameObjects.Sprite with Arcade Physics body",
+      "check_items": ["IMP-02", "IMP-03"]
+    },
+    {
+      "constraint_id": "REQ-ENEMY-001",
+      "description": "Enemy rendered with Phaser Graphics, 3-face box",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/Enemy.js",
+      "impl_detail": "Enemy extends Phaser.GameObjects.Graphics; _draw() calls _drawBox() for front+side+top per enemy type (grunt/heavy/elite)",
+      "check_items": ["IMP-01", "IMP-02", "IMP-17"]
+    },
+    {
+      "constraint_id": "REQ-ENEMY-002",
+      "description": "Enemy perspective projection based on z coordinate; scale = 1/(1+z/1000)",
+      "status": "implemented",
+      "impl_location": "src/utils/PerspectiveProjection.js, src/gameobjects/Enemy.js",
+      "impl_detail": "perspectiveScale(z)=1/(1+z/1000) in PerspectiveProjection.js; Enemy.getScreenPosition() calls projectToScreen(); Enemy.update() applies scale on every frame",
+      "check_items": ["IMP-02", "IMP-05", "IMP-13"]
+    },
+    {
+      "constraint_id": "REQ-ENEMY-003",
+      "description": "Enemy collision detection uses Arcade Physics",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/Enemy.js, src/gameobjects/Player.js, src/gameobjects/Bullet.js",
+      "impl_detail": "All three classes call scene.physics.add.existing(this) in constructor to enable Arcade Physics body; body.reset() called each frame to track Graphics position",
+      "check_items": ["IMP-08", "IMP-11"]
+    }
+  ],
+  "files_produced": [
+    "src/gameobjects/Player.js",
+    "src/gameobjects/Enemy.js",
+    "src/gameobjects/Bullet.js",
+    "src/systems/EnemySpawner.js",
+    "src/utils/PerspectiveProjection.js"
+  ],
+  "implementation_blockers": {
+    "items": [],
+    "completed_count": 6,
+    "total_count": 6,
+    "blocked_count": 0,
+    "completed_percentage": 100,
+    "blocked_percentage": 0
+  }
+}

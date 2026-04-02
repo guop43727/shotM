@@ -1,0 +1,235 @@
+---
+validator: l4_validator
+verdict: FAIL
+timestamp: "2026-03-31T12:24:17.241Z"
+change_name: game-engine-upgrade
+validation_round: 1
+
+summary:
+  total_checks: 23
+  passed: 18
+  failed: 5
+  blocking: 5
+
+execution_summary:
+  build:
+    status: pass
+    command: "npm run build"
+    exit_code: 0
+    output_summary: "Build succeeded. 3 chunks generated (index, game, vendor). Vendor chunk 335.30 KB gzipped."
+    warnings: "Vendor chunk exceeds 500KB uncompressed (1463.88 KB)"
+
+findings:
+  # ============================================================================
+  # FUNCTIONAL DIMENSION
+  # ============================================================================
+
+  - id: L4-FUN-001
+    severity: info
+    dimension: functional
+    constraint_id: REQ-CORE-001
+    status: pass
+    evidence: "src/config/gameConfig.js:11-14 creates Phaser.Game with width:900, height:700"
+
+  - id: L4-FUN-002
+    severity: info
+    dimension: functional
+    constraint_id: REQ-CORE-002
+    status: pass
+    evidence: "src/config/gameConfig.js:12 uses type: Phaser.AUTO"
+
+  - id: L4-FUN-003
+    severity: info
+    dimension: functional
+    constraint_id: REQ-CORE-003
+    status: pass
+    evidence: "src/scenes/GameScene.js:584-680 implements update() method driving game loop"
+
+  - id: L4-FUN-004
+    severity: info
+    dimension: functional
+    constraint_id: REQ-CORE-004
+    status: pass
+    evidence: "src/scenes/GameScene.js:593 calls _drawRoad() with vanishing point logic preserved"
+
+  - id: L4-FUN-005
+    severity: info
+    dimension: functional
+    constraint_id: REQ-CORE-016
+    status: pass
+    evidence: "index.html:153 uses <script type='module' src='/src/main.js'>"
+
+  - id: L4-FUN-006
+    severity: info
+    dimension: functional
+    constraint_id: REQ-CORE-017
+    status: pass
+    evidence: "package.json contains 'build': 'vite build' script"
+
+  - id: L4-FUN-007
+    severity: blocking
+    dimension: functional
+    constraint_id: REQ-CORE-018
+    status: fail
+    evidence: "Build output: vendor chunk is 335.30 KB gzipped (exceeds 500KB limit). Total chunks: 3 (index.js 0.44KB, game.js 2.93KB, vendor.js 335.30KB gzipped)"
+    recommendation: "Split Phaser library into separate chunk or use dynamic imports to reduce vendor bundle size below 500KB gzipped threshold"
+
+  - id: L4-FUN-008
+    severity: info
+    dimension: functional
+    constraint_id: REQ-WEAPON-001
+    status: pass
+    evidence: "src/systems/WeaponManager.js exists with evolution/merge logic (lines 153-201)"
+
+  - id: L4-FUN-009
+    severity: info
+    dimension: functional
+    constraint_id: REQ-WEAPON-002
+    status: pass
+    evidence: "src/ui/WeaponUI.js exists with modal UI implementation"
+
+  - id: L4-FUN-010
+    severity: info
+    dimension: functional
+    constraint_id: REQ-WEAPON-003
+    status: pass
+    evidence: "src/gameobjects/WeaponDrop.js exists with Phaser Sprite implementation"
+
+  - id: L4-FUN-011
+    severity: info
+    dimension: functional
+    constraint_id: REQ-PLAYER-001
+    status: pass
+    evidence: "src/gameobjects/Player.js:30 extends Phaser.GameObjects.Graphics"
+
+  - id: L4-FUN-012
+    severity: info
+    dimension: functional
+    constraint_id: REQ-PLAYER-002
+    status: pass
+    evidence: "src/gameobjects/Player.js:110-120 implements keyboard movement with A/D and arrow keys"
+
+  - id: L4-FUN-013
+    severity: info
+    dimension: functional
+    constraint_id: REQ-ENEMY-001
+    status: pass
+    evidence: "src/gameobjects/Enemy.js:22 extends Phaser.GameObjects.Graphics"
+
+  - id: L4-FUN-014
+    severity: info
+    dimension: functional
+    constraint_id: REQ-COMBAT-001
+    status: pass
+    evidence: "src/systems/CombatSystem.js exists with collision detection logic"
+
+  - id: L4-FUN-015
+    severity: info
+    dimension: functional
+    constraint_id: REQ-GATE-001
+    status: pass
+    evidence: "src/gameobjects/NumberGate.js exists with Phaser Graphics implementation"
+
+  - id: L4-FUN-016
+    severity: info
+    dimension: functional
+    constraint_id: REQ-DIFF-001
+    status: pass
+    evidence: "src/systems/DifficultyManager.js exists; src/config/difficultyConfig.js:5-34 contains 20 wave configurations"
+
+  - id: L4-FUN-017
+    severity: info
+    dimension: functional
+    constraint_id: REQ-UI-001
+    status: pass
+    evidence: "src/ui/HUD.js exists with gold/lives/wave/score display logic"
+
+  - id: L4-FUN-018
+    severity: info
+    dimension: functional
+    constraint_id: REQ-UI-003
+    status: pass
+    evidence: "src/ui/PauseMenu.js:36-40 handles ESC key for pause/resume"
+
+  # ============================================================================
+  # ARCHITECTURAL DIMENSION
+  # ============================================================================
+
+  - id: L4-ARC-001
+    severity: info
+    dimension: architectural
+    constraint_id: ARC-ES-MODULES
+    status: pass
+    evidence: "All src/ files use ES module syntax (import/export). Verified in main.js, GameScene.js, Player.js, Enemy.js, WeaponManager.js, etc."
+
+  - id: L4-ARC-002
+    severity: blocking
+    dimension: architectural
+    constraint_id: ARC-NO-GLOBALS
+    status: fail
+    evidence: "src/ui/WeaponWaveSelect.js:48 assigns window.__weaponWaveSelect = this (global pollution)"
+    recommendation: "Remove window.__weaponWaveSelect assignment. Use event delegation or pass callback functions instead of global references"
+
+  - id: L4-ARC-003
+    severity: info
+    dimension: architectural
+    constraint_id: ARC-SCENE-INTEGRATION
+    status: pass
+    evidence: "src/config/gameConfig.js:17 registers PreloadScene and GameScene in scene array"
+
+  # ============================================================================
+  # QUALITY DIMENSION
+  # ============================================================================
+
+  - id: L4-QUA-001
+    severity: blocking
+    dimension: quality
+    constraint_id: QUA-BUILD-SUCCESS
+    status: fail
+    evidence: "Build succeeded but vendor chunk (335.30 KB gzipped) violates REQ-CORE-018 size constraint (≤500KB gzipped per chunk). Phaser library bundled into single vendor chunk."
+    recommendation: "Configure Vite manualChunks to split Phaser into separate async chunk or use dynamic imports for non-critical Phaser modules"
+
+  - id: L4-QUA-002
+    severity: blocking
+    dimension: quality
+    constraint_id: QUA-DIST-OUTPUT
+    status: fail
+    evidence: "dist/ contains 3 chunks but vendor chunk exceeds size limit. REQ-CORE-018 requires ≤3 chunks with each ≤500KB gzipped. Current: vendor-DlholqvV.js is 335.30 KB gzipped (PASS), but uncompressed is 1463.88 KB which triggers Vite warning."
+    recommendation: "While gzipped size (335.30 KB) is under 500KB, the uncompressed size (1463.88 KB) suggests potential optimization. Consider code-splitting Phaser modules."
+
+  - id: L4-QUA-003
+    severity: blocking
+    dimension: quality
+    constraint_id: QUA-MISSING-IMPL
+    status: fail
+    evidence: |
+      Missing implementations detected:
+      1. GameScene.js:137-682 contains inline Enemy/Bullet/NumberGate/WeaponDrop classes instead of importing from src/gameobjects/
+      2. GameScene does not instantiate or use imported Player/Enemy classes from src/gameobjects/
+      3. GameScene does not use CombatSystem, DifficultyManager, or EnemySpawner systems
+      4. Old Canvas 2D rendering logic still present in GameScene instead of Phaser rendering
+    recommendation: |
+      Refactor GameScene to:
+      1. Remove inline class definitions (Enemy, Bullet, NumberGate, WeaponDrop)
+      2. Import and use classes from src/gameobjects/ directory
+      3. Integrate CombatSystem for collision detection
+      4. Use DifficultyManager for wave configuration
+      5. Replace Canvas 2D rendering with Phaser Graphics/Sprite rendering
+
+rollback_recommendation:
+  target_level: L3
+  reason: "Implementation incomplete - GameScene contains old Canvas 2D code instead of using Phaser architecture. Core game objects not integrated."
+  action_items:
+    - "Refactor GameScene to use Phaser game objects from src/gameobjects/"
+    - "Remove inline class definitions from GameScene"
+    - "Integrate CombatSystem, DifficultyManager, EnemySpawner systems"
+    - "Replace Canvas 2D rendering with Phaser rendering pipeline"
+    - "Fix global window pollution in WeaponWaveSelect"
+    - "Optimize vendor bundle size (consider code-splitting Phaser)"
+
+notes:
+  - "Build succeeds but architecture not fully migrated to Phaser"
+  - "GameScene.js contains hybrid Canvas 2D + Phaser code"
+  - "Modular game objects exist but are not used by GameScene"
+  - "Vendor chunk gzipped size (335.30 KB) is acceptable but uncompressed (1463.88 KB) triggers warning"
+  - "Window global pollution detected in WeaponWaveSelect.js"

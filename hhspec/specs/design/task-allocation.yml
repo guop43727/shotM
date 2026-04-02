@@ -1,0 +1,67 @@
+metadata:
+  change_name: mobile-warrior-system
+  module: PLAYER
+  generated_at: "2026-04-02"
+  generated_by: l2-coordinator
+  mode: simple
+
+# 简单模式（0 HTTP 接口，纯前端 Canvas 游戏）
+# 无跨专家分工，coordinator 独立完成
+
+task_allocation:
+  mode: simple_coordinator_only
+  reason: "0 HTTP 接口，纯前端游戏，单文件修改（game.js），复杂度分类为简单模式"
+
+  tasks:
+    - id: TASK-001
+      owner: coordinator
+      type: state_design
+      description: "设计 keys 状态对象（keys.ArrowLeft, keys.ArrowRight）和 player.speed 字段"
+      input:
+        - "REQ-PLAYER-001~003：按键状态驱动移动"
+        - "decision.md 决策 1：keys 状态对象 + 逐帧轮询"
+        - "decision.md 决策 5：player.speed 作为 player 属性"
+      output: "PLAYER-movement-design.md §2"
+      status: complete
+
+    - id: TASK-002
+      owner: coordinator
+      type: function_design
+      description: "设计 updatePlayerPosition() 完整伪代码（守卫条件、双键检测、移动计算、边界钳制）"
+      input:
+        - "REQ-PLAYER-001~008：功能需求"
+        - "decision.md 决策 2~4：边界、双键、弹窗策略"
+        - "BS-001~011：边界场景"
+      output: "PLAYER-movement-design.md §3"
+      status: complete
+
+    - id: TASK-003
+      owner: coordinator
+      type: event_design
+      description: "设计 keydown/keyup 事件监听伪代码（独立注册，职责单一）"
+      input:
+        - "REQ-PLAYER-001~003：键盘事件需求"
+        - "impact.md §4.2 触点 2：选项 B（独立监听）"
+      output: "PLAYER-movement-design.md §4"
+      status: complete
+
+    - id: TASK-004
+      owner: coordinator
+      type: integration_design
+      description: "确定 gameLoop 插入点（updatePlayerPosition 调用位置和顺序保证）"
+      input:
+        - "REQ-PLAYER-007, REQ-PLAYER-008：调用顺序需求"
+        - "impact.md §4.1 触点 1：game.js:1104 drawPlayer() 之前"
+      output: "PLAYER-movement-design.md §5"
+      status: complete
+
+    - id: TASK-005
+      owner: coordinator
+      type: test_design
+      description: "设计 18 个测试点的 AAA 伪代码测试骨架，覆盖 12 个 Gherkin 场景和边界场景"
+      input:
+        - "L0 需求 §4：12 个 Gherkin 场景"
+        - "L0 需求 §5：BS-001~011 边界场景"
+        - "REQ-PLAYER-010, REQ-PLAYER-011：非功能需求"
+      output: "PLAYER-test-detail.md"
+      status: complete

@@ -1,0 +1,43 @@
+metadata:
+  change_name: mobile-warrior-system
+  module: PLAYER
+  generated_at: "2026-04-02"
+  generated_by: l2-coordinator
+  mode: simple
+  bootstrap_mode: false
+
+complexity_metrics:
+  functional_requirements: 8
+  non_functional_requirements: 2
+  gherkin_scenarios: 12
+  boundary_scenarios: 11
+  new_functions: 1
+  new_state_fields: 3
+  new_event_listeners: 2
+  modified_files: 1
+  risk_level: low
+  max_weighted_risk_score: 1.35
+  http_endpoints: 0
+  database_entities: 0
+  domains_affected: 1
+
+complexity_classification: simple
+  # 判定依据：
+  # - 0 HTTP 接口（纯前端游戏）
+  # - 1 个新函数，3 个新字段
+  # - 仅修改 1 个文件（game.js）
+  # - 风险最高分 1.35 < 1.5（低风险）
+  # => 简单模式，coordinator 独立完成全部 L2 设计
+
+areas_breakdown:
+  - area: player.x 动态化
+    weighted_score: 1.35
+    risk: low
+
+  - area: 键盘事件注册
+    weighted_score: 0.65
+    risk: low
+
+  - area: gameLoop 调用顺序变更
+    weighted_score: 1.30
+    risk: low

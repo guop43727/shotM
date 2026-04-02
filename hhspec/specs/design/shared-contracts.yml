@@ -1,0 +1,53 @@
+metadata:
+  change_name: mobile-warrior-system
+  module: PLAYER
+  generated_at: "2026-04-02"
+  generated_by: l2-coordinator
+  mode: simple
+
+# 简单模式（纯前端 Canvas 游戏，0 HTTP 接口，单文件修改）
+# 无跨专家协作，无共享契约需要定义
+
+shared_contracts:
+  naming_conventions:
+    - pattern: "keys.{KeyName}"
+      description: "键盘状态对象字段命名，使用原生 KeyboardEvent.key 字符串作为字段名"
+      examples:
+        - "keys.ArrowLeft"
+        - "keys.ArrowRight"
+
+    - pattern: "player.{property}"
+      description: "player 对象属性扩展，新增字段与已有字段风格一致（camelCase）"
+      examples:
+        - "player.speed"
+        - "player.x"
+
+    - pattern: "update{Entity}()"
+      description: "逐帧状态更新函数命名规范（参考现有 autoFire, drawPlayer）"
+      examples:
+        - "updatePlayerPosition()"
+
+  type_mappings:
+    - name: "player.x"
+      type: Number
+      range: "[150, 750]"
+      note: "canvas.width/2 ± GAME_CONSTANTS.ROAD_WIDTH"
+
+    - name: "player.speed"
+      type: Number
+      value: 5
+      unit: "px/frame"
+
+    - name: "keys.ArrowLeft"
+      type: Boolean
+      initial: false
+
+    - name: "keys.ArrowRight"
+      type: Boolean
+      initial: false
+
+  boundary_constants:
+    left_boundary: 150
+    right_boundary: 750
+    derivation: "canvas.width/2 - GAME_CONSTANTS.ROAD_WIDTH = 450 - 300 = 150"
+    source: "game.js:3, game.js:9"

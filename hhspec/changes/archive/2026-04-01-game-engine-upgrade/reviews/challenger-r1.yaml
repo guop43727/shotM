@@ -1,0 +1,330 @@
+---
+review_report:
+  title: "迁移至 Phaser 3 游戏引擎 审查报告"
+  reviewer: "challenger-agent"
+  date: "2026-03-30"
+  round: 1
+  requirement_source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+  impact_source: "hhspec/changes/game-engine-upgrade/impact.md"
+
+  verdict: "FAIL"
+
+  dimensions:
+    coverage:
+      status: "FAIL"
+      passed_items:
+        - "COV-01"
+        - "COV-02"
+        - "COV-03"
+        - "COV-04"
+        - "COV-05"
+        - "COV-06"
+        - "COV-07"
+        - "COV-08"
+        - "COV-09"
+        - "COV-10"
+        - "COV-11"
+        - "COV-12"
+        - "COV-13"
+        - "COV-19"
+      issues:
+        - id: "ISS-L0C-001"
+        - id: "ISS-L0C-002"
+        - id: "ISS-L0C-003"
+        - id: "ISS-L0C-004"
+        - id: "ISS-L0C-005"
+
+    feasibility:
+      status: "FAIL"
+      passed_items:
+        - "FEA-01"
+        - "FEA-02"
+        - "FEA-03"
+        - "FEA-04"
+        - "FEA-05"
+        - "FEA-06"
+        - "FEA-07"
+        - "FEA-08"
+        - "FEA-10"
+      issues:
+        - id: "ISS-L0C-006"
+
+    split:
+      status: "PASS"
+      passed_items:
+        - "SPL-01"
+        - "SPL-02"
+        - "SPL-03"
+        - "SPL-04"
+        - "SPL-05"
+        - "SPL-06"
+      issues: []
+      split_proposals: []
+
+  issues:
+    - id: "ISS-L0C-001"
+      dimension: "coverage"
+      check_item: "COV-14"
+      severity: "MUST_FIX"
+      title: "覆盖度清单缺失字段级穷举"
+      evidence:
+        source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+        location: "第 6.2 节 验收策略"
+        quote: "6.2.2 受影响接口穷举（逐接口逐字段）... 6.2.3 受影响消费方穷举"
+      description: |
+        需求文档中的 coverage_checklist 未穷举到字段级别。虽然 6.2.2 节列出了受影响接口，
+        但缺少对以下关键数据结构的字段级覆盖度清单：
+        1. Phaser 游戏配置对象（type/width/height/physics/scene等字段）
+        2. Phaser Scene 类的生命周期方法（preload/create/update字段）
+        3. Arcade Physics 配置对象（gravity/debug/bounds等字段）
+        4. Sound Manager 配置对象（volume/mute/rate等字段）
+        5. Vite 配置对象（base/build/server等字段）
+      recommendation: |
+        在需求文档第 6.2 节增加 "6.2.4 字段级覆盖度清单" 子节，穷举以下配置对象的所有字段：
+
+        **Phaser 游戏配置对象**：
+        - type: Phaser.AUTO / Phaser.WEBGL / Phaser.CANVAS
+        - width: 900
+        - height: 700
+        - parent: 'game-container'
+        - physics: { default: 'arcade', arcade: { gravity: {y: 0}, debug: false } }
+        - scene: [MainScene]
+        - backgroundColor: '#000000'
+
+        **Phaser Scene 生命周期方法**：
+        - preload(): 资源预加载（音效文件、纹理）
+        - create(): 场景初始化（创建游戏对象、配置物理引擎）
+        - update(time, delta): 游戏循环更新（替代 requestAnimationFrame）
+
+        **Arcade Physics 配置**：
+        - gravity: {x: 0, y: 0}（无重力）
+        - debug: false（生产环境关闭调试）
+        - bounds: {x: 0, y: 0, width: 900, height: 700}（碰撞边界）
+
+        **Sound Manager 配置**：
+        - volume: 1.0（默认音量）
+        - mute: false（默认不静音）
+        - rate: 1.0（默认播放速率）
+        - detune: 0（默认音调）
+
+        **Vite 配置对象**：
+        - base: './'（部署基础路径）
+        - build.outDir: 'dist'（构建输出目录）
+        - build.rollupOptions.input: 'src/main.js'（入口文件）
+        - server.port: 5173（开发服务器端口）
+        - server.open: true（自动打开浏览器）
+      remediation:
+        steps:
+          - "在需求文档第 6.2 节后增加 '6.2.4 字段级覆盖度清单' 子节"
+          - "逐配置对象列出所有字段及其目标值"
+          - "标注每个字段的验证方法（自动化测试/手动验证）"
+        template: |
+          ### 6.2.4 字段级覆盖度清单
+
+          | 配置对象 | 字段 | 目标值 | 验证方法 |
+          |---------|------|--------|----------|
+          | Phaser 游戏配置 | type | Phaser.AUTO | 自动化测试读取 game.config.type |
+          | Phaser 游戏配置 | width | 900 | 自动化测试读取 game.config.width |
+          | ... | ... | ... | ... |
+        affected_section: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md:第 6.2 节"
+
+    - id: "ISS-L0C-002"
+      dimension: "coverage"
+      check_item: "COV-15"
+      severity: "SUGGEST"
+      title: "UI 字段三类拆分不适用于本需求"
+      evidence:
+        source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+        location: "第 4 节 验收标准"
+        quote: "本需求为技术优化，无新增 UI 界面"
+      description: |
+        COV-15 检查项要求 UI 需求的每个 screen 都列出 display_fields / input_fields / action_elements。
+        但本需求为技术优化（引擎迁移），不涉及新增 UI 界面，现有 UI（HUD、武器管理弹窗）的字段结构未变化。
+        因此 COV-15 检查项不适用于本需求。
+      recommendation: |
+        无需修改。本需求为技术优化，COV-15 检查项不适用。若未来需求涉及 UI 界面变更，再补充 UI 字段三类拆分。
+      remediation:
+        steps: []
+        template: ""
+        affected_section: "N/A"
+
+    - id: "ISS-L0C-003"
+      dimension: "coverage"
+      check_item: "COV-16"
+      severity: "SUGGEST"
+      title: "导出字段穷举不适用于本需求"
+      evidence:
+        source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+        location: "第 1.3 节 范围"
+        quote: "Out of Scope: 游戏玩法规则变更、新增游戏功能、后端服务或排行榜系统"
+      description: |
+        COV-16 检查项要求有导出/报表/产出物功能时穷举 export_fields 和 export_format。
+        但本需求为技术优化（引擎迁移），不涉及导出、报表或产出物功能。
+        因此 COV-16 检查项不适用于本需求。
+      recommendation: |
+        无需修改。本需求为技术优化，COV-16 检查项不适用。
+      remediation:
+        steps: []
+        template: ""
+        affected_section: "N/A"
+
+    - id: "ISS-L0C-004"
+      dimension: "coverage"
+      check_item: "COV-17"
+      severity: "MUST_FIX"
+      title: "技术优化接口字段变化标注不完整"
+      evidence:
+        source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+        location: "第 6.2.2 节 受影响接口穷举"
+        quote: "| `game.js` 全局对象 | 重构 | 移除全局 `game` 对象，改为 Phaser Scene 类的实例属性 | N/A | ..."
+      description: |
+        需求文档 6.2.2 节列出了受影响接口，但未逐字段标注入参/出参的变化。例如：
+        1. `game` 对象从全局变量改为 Scene 实例属性，但未列出 game 对象的所有字段（gold/lives/wave/score/enemies/bullets/weaponDrops）及其变化
+        2. `player` 对象从全局变量改为 Scene 实例属性，但未列出 player 对象的所有字段（x/y/width/height/count/weapon）及其变化
+        3. `playSound(type)` 接口保持不变，但未标注内部实现从 Web Audio API 改为 Phaser Sound Manager 后，音效播放的参数变化（如是否支持 volume/loop/detune 参数）
+
+        影响分析报告中的 affected_interfaces 已逐接口标注了变化，但需求文档中的覆盖度清单未与之对齐。
+      recommendation: |
+        在需求文档第 6.2.2 节增加 "入参字段变化" 和 "出参字段变化" 列，逐接口逐字段标注变化。
+
+        **示例修改**：
+
+        | 接口/模块 | 变化类型 | 入参字段变化 | 出参字段变化 | 行为变化 |
+        |-----------|----------|--------------|--------------|----------|
+        | `game` 对象 | 重构 | gold: number（保持）<br>lives: number（保持）<br>wave: number（保持）<br>score: number（保持）<br>enemies: Array（保持）<br>bullets: Array（保持）<br>weaponDrops: Array（保持） | N/A（对象无返回值） | 从全局变量改为 Scene 实例属性，访问方式从 `game.gold` 改为 `this.game.gold`（Scene 内部）或 `scene.game.gold`（外部） |
+        | `playSound(type)` | 重构 | type: string（保持）<br>**新增**: volume?: number（可选，默认 1.0）<br>**新增**: loop?: boolean（可选，默认 false） | 无返回值（保持） | 从 Web Audio API 振荡器改为 Phaser Sound Manager，支持音量和循环参数 |
+      remediation:
+        steps:
+          - "在需求文档第 6.2.2 节表格中增加 '入参字段变化' 和 '出参字段变化' 列"
+          - "逐接口列出所有入参和出参字段，标注 '保持' / '新增' / '删除' / '修改'"
+          - "与影响分析报告中的 affected_interfaces 交叉验证一致性"
+        template: |
+          | 接口/模块 | 变化类型 | 入参字段变化 | 出参字段变化 | 行为变化 |
+          |-----------|----------|--------------|--------------|----------|
+          | `game` 对象 | 重构 | gold: number（保持）<br>lives: number（保持）<br>... | N/A | ... |
+        affected_section: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md:第 6.2.2 节"
+
+    - id: "ISS-L0C-005"
+      dimension: "coverage"
+      check_item: "COV-18"
+      severity: "MUST_FIX"
+      title: "技术优化下游消费方穷举不完整"
+      evidence:
+        source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+        location: "第 6.2.3 节 受影响消费方穷举"
+        quote: "| weaponManager.js | 内部模块 | 全局 `game` 对象、`player` 对象 | 需改为 ES 模块 import，通过 Scene 实例访问游戏状态 | 单元测试 + 集成测试 |"
+      description: |
+        需求文档 6.2.3 节列出了受影响消费方，但未穷举 verify_fields（需验证的字段）。例如：
+        1. weaponManager.js 依赖 game 对象和 player 对象，但未列出具体依赖哪些字段（game.weaponDrops? player.weapon?）
+        2. weaponUI.js 依赖 game 对象和 weaponManager，但未列出具体依赖哪些字段（game.gold? game.wave?）
+        3. weaponDropIntegration.js 依赖 game 对象和 playSound()，但未列出具体依赖哪些字段（game.weaponDrops? player.x? player.y?）
+
+        影响分析报告中的 affected_consumers 已穷举了 verify_fields，但需求文档中的覆盖度清单未与之对齐。
+      recommendation: |
+        在需求文档第 6.2.3 节表格中增加 "verify_fields" 列，逐消费方列出需验证的字段。
+
+        **示例修改**：
+
+        | 消费方 | 类型 | 依赖的接口/数据 | 迁移影响 | verify_fields | 验证方法 |
+        |--------|------|------------------|----------|---------------|----------|
+        | weaponManager.js | 内部模块 | 全局 `game` 对象、`player` 对象 | 需改为 ES 模块 import，通过 Scene 实例访问游戏状态 | game.weaponDrops<br>player.weapon | 单元测试 + 集成测试 |
+        | weaponUI.js | 内部模块 | 全局 `game` 对象、`weaponManager` | 需改为 ES 模块 import，通过 Scene 实例访问游戏状态 | game.gold<br>game.wave<br>player.weapon | 单元测试 + 手动 UI 测试 |
+        | weaponDropIntegration.js | 内部模块 | 全局 `game` 对象、`playSound()` | 需改为 ES 模块 import，音效调用改为 Phaser Sound Manager | game.weaponDrops<br>player.x<br>player.y | 单元测试 + 武器掉落场景测试 |
+      remediation:
+        steps:
+          - "在需求文档第 6.2.3 节表格中增加 'verify_fields' 列"
+          - "逐消费方列出需验证的字段（从影响分析报告中提取）"
+          - "与影响分析报告中的 affected_consumers 交叉验证一致性"
+        template: |
+          | 消费方 | 类型 | 依赖的接口/数据 | 迁移影响 | verify_fields | 验证方法 |
+          |--------|------|------------------|----------|---------------|----------|
+          | weaponManager.js | 内部模块 | ... | ... | game.weaponDrops<br>player.weapon | ... |
+        affected_section: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md:第 6.2.3 节"
+
+    - id: "ISS-L0C-006"
+      dimension: "feasibility"
+      check_item: "FEA-09"
+      severity: "MUST_FIX"
+      title: "风险评估未使用五维加权模型"
+      evidence:
+        source: "hhspec/changes/game-engine-upgrade/impact.md"
+        location: "第 6.1 节 回归风险矩阵"
+        quote: "风险评分标准: 影响范围 (30%) / 变更深度 (25%) / 耦合程度 (20%) / 测试覆盖 (15%) / 可逆性 (10%)"
+      description: |
+        影响分析报告中的风险评估使用了五维加权模型（影响范围/变更深度/耦合程度/测试覆盖/可逆性），
+        但评分标准中 "测试覆盖" 维度的评分定义有误：
+        - 当前定义：0=完整测试, 1=部分测试, 2=部分测试, 3=无测试
+        - 问题：1 和 2 的定义重复（都是 "部分测试"）
+
+        正确的评分标准应为：
+        - 0=完整测试（80%+ 覆盖率）
+        - 1=较高测试（60-80% 覆盖率）
+        - 2=部分测试（30-60% 覆盖率）
+        - 3=无测试（< 30% 覆盖率）
+
+        此外，风险矩阵中所有领域的 "测试覆盖" 评分均为 0 或 1，但根据代码库证据（tests/ 目录仅有武器系统测试），
+        CORE/PLAYER/COMBAT 领域的测试覆盖率应为 2（部分测试）或 3（无测试），而非 0 或 1。
+      recommendation: |
+        修正影响分析报告第 6.1 节的风险评分标准和风险矩阵：
+
+        1. 修正 "测试覆盖" 维度的评分定义：
+           - 0=完整测试（80%+ 覆盖率）
+           - 1=较高测试（60-80% 覆盖率）
+           - 2=部分测试（30-60% 覆盖率）
+           - 3=无测试（< 30% 覆盖率）
+
+        2. 重新评估各领域的测试覆盖评分：
+           - CORE 领域（game.js）：当前评分 1 → 修正为 3（无测试，tests/ 目录无 game.test.js）
+           - PLAYER 领域（player 对象）：当前评分 1 → 修正为 3（无测试）
+           - WEAPON 领域（weaponManager.js）：当前评分 2 → 修正为 1（较高测试，tests/weaponSystem.test.js 存在）
+           - COMBAT 领域（碰撞检测）：当前评分 1 → 修正为 3（无测试）
+           - UI 领域（weaponUI.js）：当前评分 1 → 修正为 2（部分测试，tests/weaponIntegration.test.js 部分覆盖）
+
+        3. 重新计算加权分和风险等级。
+      remediation:
+        steps:
+          - "修正影响分析报告第 6.1 节 '风险评分标准' 中 '测试覆盖' 维度的定义"
+          - "使用 Grep 工具搜索 tests/ 目录，确认各领域的实际测试覆盖情况"
+          - "重新评估风险矩阵中各领域的 '测试覆盖' 评分"
+          - "重新计算加权分（公式：影响范围*0.3 + 变更深度*0.25 + 耦合程度*0.2 + 测试覆盖*0.15 + 可逆性*0.1）"
+          - "根据新的加权分更新风险等级（≥2.5=高，1.5-2.5=中，<1.5=低）"
+        template: |
+          **修正后的风险评分标准**：
+          - 测试覆盖 (15%): 0=完整测试（80%+）, 1=较高测试（60-80%）, 2=部分测试（30-60%）, 3=无测试（<30%）
+
+          **修正后的风险矩阵**：
+          | 受影响领域/Spec | 影响范围 | 变更深度 | 耦合程度 | 测试覆盖 | 可逆性 | 加权分 | 风险等级 |
+          |----------------|---------|---------|---------|---------|--------|--------|---------|
+          | CORE 领域（game.js） | 3 | 3 | 3 | 3 | 2 | 2.85 | 高 |
+          | WEAPON 领域（weaponManager.js） | 2 | 2 | 2 | 1 | 1 | 1.70 | 中 |
+        affected_section: "hhspec/changes/game-engine-upgrade/impact.md:第 6.1 节"
+
+  uncertainties:
+    - id: "UNC-L0C-001"
+      question: "Phaser 3 版本选择（3.80+ 最新版 vs 3.55 LTS）是否已确认？"
+      impact: "影响 REQ-CORE-001、REQ-CORE-016 的实现方案和兼容性测试范围"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-001），建议在第 2 轮审查前由用户确认版本策略"
+
+    - id: "UNC-L0C-002"
+      question: "赛博朋克士兵角色（drawCyberSoldier）迁移方案（Graphics 动态绘制 vs 预渲染 Sprite）是否已确认？"
+      impact: "影响 REQ-CORE-005 的实现复杂度和性能表现"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-002），建议先用 Graphics 快速迁移，性能不达标时再优化为 Sprite"
+
+    - id: "UNC-L0C-003"
+      question: "音效资源格式（Web Audio API 合成 vs MP3/OGG 文件）是否已确认？"
+      impact: "影响 REQ-CORE-011~015 的实现方案和资源体积"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-004），建议引入轻量级音效文件（每个 < 10KB）提升音质"
+
+    - id: "UNC-L0C-004"
+      question: "性能目标设备（MacBook Pro M1）是否为最低配置要求？"
+      impact: "影响 REQ-CORE-022、OPT-CORE-001 的性能基线和优化策略"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-008），建议明确最低配置要求（如 Intel i5 双核），并据此调整粒子数量和特效复杂度"
+
+  summary:
+    total_issues: 6
+    must_fix_count: 4
+    suggest_count: 2
+    coverage_score: "FAIL - 14/19 项通过（COV-14/17/18 未通过，COV-15/16 不适用）"
+    feasibility_score: "FAIL - 9/10 项通过（FEA-09 未通过）"
+    split_score: "PASS - 6/6 项通过"
+---

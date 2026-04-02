@@ -1,0 +1,75 @@
+metadata:
+  change_name: mobile-warrior-system
+  module: PLAYER
+  generated_at: "2026-04-02"
+  generated_by: l2-coordinator
+  mode: simple
+  total_dimensions_checked: 7
+  applicable_dimensions: 7
+  conflicts_found: 0
+  gaps_found: 0
+
+# 简单模式（单一协调者设计，无跨专家产出，不适用完整 CFL-01~18 规则体系）
+# 执行适用的一致性检测维度
+
+conflict_checks:
+  - id: CFL-01
+    name: "命名一致性"
+    status: PASS
+    evidence:
+      - "keys.ArrowLeft/Right 与 L0 需求 §9 术语表一致"
+      - "updatePlayerPosition 与 L0 需求 §9 术语表一致"
+      - "player.speed 与 decision.md 决策 5 一致"
+
+  - id: CFL-02
+    name: "类型一致性"
+    status: PASS
+    evidence:
+      - "player.x: Number，与 game.js:94 一致"
+      - "player.speed: Number，与 L0 需求 §7.2 field_coverage 一致"
+      - "keys.ArrowLeft/Right: Boolean，与 L0 需求 §7.2 一致"
+
+  - id: CFL-03
+    name: "状态机一致性"
+    status: PASS
+    evidence:
+      - "gamePaused/gameOverFlag/waveActive 状态矩阵与 L0 需求 §6.3 完全一致"
+      - "updatePlayerPosition() 守卫条件覆盖全部禁止移动状态"
+
+  - id: CFL-04
+    name: "边界值一致性"
+    status: PASS
+    evidence:
+      - "左边界 150 = canvas.width/2 - GAME_CONSTANTS.ROAD_WIDTH = 450 - 300（game.js:3, game.js:9）"
+      - "右边界 750 = canvas.width/2 + GAME_CONSTANTS.ROAD_WIDTH = 450 + 300"
+      - "与 L0 需求 §1.3 道路边界定义一致"
+
+  - id: CFL-07
+    name: "调用顺序一致性"
+    status: PASS
+    evidence:
+      - "updatePlayerPosition → drawPlayer → autoFire（REQ-007, REQ-008 要求）"
+      - "impact.md §4.1 触点 1 确认 game.js:1104 插入点"
+
+  - id: CFL-08
+    name: "错误处理一致性"
+    status: PASS
+    evidence:
+      - "gamePaused 守卫覆盖 REQ-005"
+      - "gameOverFlag 守卫覆盖 REQ-006"
+      - "isNaN 防御覆盖 BS-009"
+      - "player.speed || 5 默认值覆盖 BS-008"
+
+  - id: CFL-11
+    name: "模块隔离（weapon*.js 不修改）"
+    status: PASS
+    evidence:
+      - "设计范围仅 game.js，REQ-011 约束"
+      - "impact.md §3.1 确认 weaponDropIntegration.js 行为自动适配，无需修改"
+
+summary:
+  blocking_conflicts: 0
+  compatible_conflicts: 0
+  gaps: 0
+  overall_status: PASS
+  note: "简单模式单文件变更，无跨专家冲突，一致性验证全部通过"

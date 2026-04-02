@@ -1,0 +1,246 @@
+---
+reviewer: l3_performance_reviewer
+reviewer_layer: craft
+dimension: performance
+change_name: mobile-warrior-system
+review_round: 1
+timestamp: 2026-04-02T00:00:00Z
+
+verdict: PASS
+
+summary: |
+  Performance review completed for mobile-warrior-system (PLAYER movement) implementation.
+  No blocking performance issues found.
+
+  Scope: updatePlayerPosition() function (game.js:1063-1106), keys object
+  (game.js:110-112), keydown listener (game.js:1031-1038), keyup listener
+  (game.js:1040-1047), and gameLoop integration call (game.js:1175).
+
+  The implementation is correctly O(1) per frame: 5 sequential guard returns +
+  at most 2 arithmetic operations + 2 property lookups per call. No loops,
+  no DB/API calls, no DOM manipulation, no memory allocation on the hot path.
+  Per REQ-PLAYER-010 the frame budget is 1ms; theoretical overhead is << 0.1ms.
+
+  Two info-level observations are recorded: (1) canvas.width / 2 is recomputed
+  twice in the same function call (NaN guard path and boundary calc path), a
+  trivial micro-optimization with zero measurable impact; (2) document-level
+  keydown/keyup event listeners have no removeEventListener counterpart, which
+  is acceptable for a single-page game with one game instance lifetime but
+  worth documenting for future maintainability.
+
+findings_summary:
+  total: 2
+  blocking: 0
+  warning: 0
+  info: 2
+
+findings:
+  - id: FND-PERF-001
+    category: Repeated Constant Computation
+    check_item: PERF-08
+    severity: info
+    location:
+      file: game.js
+      lines: "1086, 1103-1104"
+    description: |
+      canvas.width / 2 is computed twice within a single updatePlayerPosition()
+      call: once on the NaN-reset path (line 1086) and once on the boundary
+      calculation path (lines 1103-1104). canvas.width is a constant integer
+      (900, set at game.js:3 and never changed), so both computations always
+      yield 450. The boundary values leftBound and rightBound are also
+      recomputed every frame regardless of whether any key is pressed — they
+      are declared after the direction-check but before the final clamp, meaning
+      the clamp is always executed (even when newX == player.x and no movement
+      occurs).
+    evidence: |
+      game.js:3   - canvas.width = 900 (constant, never reassigned)
+      game.js:1086 - player.x = canvas.width / 2  (NaN reset, yields 450)
+      game.js:1103 - const leftBound  = canvas.width / 2 - GAME_CONSTANTS.ROAD_WIDTH  (yields 150)
+      game.js:1104 - const rightBound = canvas.width / 2 + GAME_CONSTANTS.ROAD_WIDTH  (yields 750)
+      game.js:1103-1105 are reached on every non-early-return frame, even when
+      keys.ArrowLeft == false AND keys.ArrowRight == false, so newX == player.x
+      and the Math.max/Math.min clamp is a no-op.
+    impact: |
+      At 60fps: 60 frames/sec x (2 divisions + 2 subtractions/additions +
+      2 property reads) = 360 arithmetic operations/sec.
+      Division on modern JS engines: ~0.0001ms each.
+      Total overhead: ~0.036ms/sec across all frames combined.
+      Effective per-frame cost: <<0.001ms.
+      Impact on REQ-PLAYER-010 budget (1ms/frame): negligible (~0.001% of budget).
+    data_scale_context: |
+      Canvas dimensions are fixed integers (900x700). GAME_CONSTANTS is a
+      module-scope frozen object. No dynamic scale or resize is implemented.
+      The game targets 60fps on desktop browsers.
+    recommendation: |
+      No action required at current scale. For documentation purposes only:
+      if future refactoring touches updatePlayerPosition(), the three constants
+      could be hoisted to module scope alongside GAME_CONSTANTS to make the
+      intent explicit:
+        const PLAYER_LEFT_BOUND  = canvas.width / 2 - GAME_CONSTANTS.ROAD_WIDTH;  // 150
+        const PLAYER_RIGHT_BOUND = canvas.width / 2 + GAME_CONSTANTS.ROAD_WIDTH;  // 750
+      This also eliminates the duplicate canvas.width / 2 on the NaN reset path.
+      This is purely a readability/consistency improvement, not a performance fix.
+
+  - id: FND-PERF-002
+    category: Event Listener Lifetime Management
+    check_item: PERF-04
+    severity: info
+    location:
+      file: game.js
+      lines: "1031-1047"
+    description: |
+      Two document-level event listeners (keydown for ArrowLeft/ArrowRight,
+      keyup for ArrowLeft/ArrowRight) are registered at module load time with
+      no corresponding removeEventListener. Within the current game architecture
+      (single HTML page, single game instance, page reload to restart), this is
+      correct and expected behavior — the listeners are intentionally permanent
+      for the page lifetime.
+
+      The concern is latent: if a future feature adds a game restart mechanism
+      that re-executes the module initialization code (e.g., dynamic script
+      reload or a reinit() function), duplicate listeners would be registered,
+      causing double-processing of every keydown/keyup event per listener
+      accumulation cycle. The guard logic inside updatePlayerPosition() would
+      still produce correct movement values (Boolean assignment is idempotent),
+      so correctness would not be broken, but CPU cost per event would grow
+      linearly with reinit count.
+    evidence: |
+      game.js:1031-1038: document.addEventListener('keydown', ...) — no cleanup ref stored
+      game.js:1040-1047: document.addEventListener('keyup', ...)  — no cleanup ref stored
+      No removeEventListener calls anywhere in game.js for these handlers.
+      No game reinit mechanism exists in current codebase (confirmed by Grep).
+      keydown/keyup handlers perform only Boolean assignments (lines 1033, 1036,
+      1042, 1045) — idempotent under duplicate firing.
+    impact: |
+      Current impact: zero. Single page lifetime = single listener registration.
+      Hypothetical impact if game reinit added without cleanup:
+        N reinits x 2 listeners per reinit = 2N keydown/keyup handlers active.
+        Each keydown event: 2N Boolean assignments instead of 2.
+        At 10 reinits: 20 assignments per keydown (still <<0.01ms per event).
+        Correctness preserved (idempotent Boolean sets).
+      No memory leak risk under current architecture. Modern browser GC does
+      not collect document-attached listeners until the document is unloaded.
+    data_scale_context: |
+      Single-page static game. No server, no navigation, no module hot reload.
+      Page reload is the only way to restart (current architecture).
+      Event rate: keydown/keyup at human input frequency (<<10 events/sec typical).
+    recommendation: |
+      No action required for current architecture. For future maintainability,
+      if a game reinit or cleanup function is ever added, store listener
+      references and remove them before re-registering:
+        const onKeyDown = (e) => { ... };
+        const onKeyUp   = (e) => { ... };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup',   onKeyUp);
+        // In cleanup: document.removeEventListener('keydown', onKeyDown);
+      This is a defensive pattern recommendation, not a bug fix.
+
+findings_by_category:
+  n_plus_1_query: 0
+  algorithm_complexity: 0
+  large_data_memory: 0
+  resource_connection_leak: 0
+  missing_index: 0
+  serialization_efficiency: 0
+  cache_missing: 0
+  query_efficiency: 1
+  event_listener_management: 1
+
+checks_passed:
+  - check_item: PERF-01
+    description: "N+1 Query Patterns"
+    result: |
+      Not applicable. updatePlayerPosition() and the keys polling mechanism
+      contain zero database, localStorage, API, or I/O calls. All state reads
+      are in-memory property accesses on the player and keys module-scope objects.
+
+  - check_item: PERF-02
+    description: "Unnecessary Loops / Recursion"
+    result: |
+      No loops or recursion in new code. updatePlayerPosition() is a flat
+      sequential function: 5 early-return guards, 1 property read, 1 conditional
+      branch (if/else if), and 1 Math.max/Math.min clamp. All O(1).
+      The keys polling pattern (gameLoop reads keys.ArrowLeft/ArrowRight each
+      frame) is the intentional design per DD-001; it is a pair of Boolean
+      property accesses, not a loop.
+
+  - check_item: PERF-03
+    description: "Large Data Set Memory Loading"
+    result: |
+      No arrays or collections are loaded, created, or iterated in new code.
+      keys object contains exactly 2 Boolean fields. player object is a
+      pre-existing single object. No heap allocation occurs on the
+      updatePlayerPosition() hot path.
+
+  - check_item: PERF-05
+    description: "Missing Index Hints"
+    result: |
+      Not applicable. This is a browser Canvas game with no database, no
+      ORM, and no query engine. PERF-05 (index cross-validation against
+      L2 IDX-NNN definitions) has no applicable scope.
+
+  - check_item: PERF-06
+    description: "Unnecessary Serialization / Deserialization"
+    result: |
+      No JSON parsing, JSON.stringify, or object-to-string-to-object
+      conversions in new code. The movement value (player.x) is a plain
+      Number that is read, arithmetically modified, and written back as a
+      Number. No type coercion or serialization boundary is crossed.
+
+  - check_item: PERF-07
+    description: "Cache Miss"
+    result: |
+      No hot-path computations with repeated identical lookups that would
+      benefit from caching. keys.ArrowLeft and keys.ArrowRight are the
+      canonical source of truth (updated by event listeners) and must be
+      read fresh each frame — caching them would be incorrect, not an
+      optimization. GAME_CONSTANTS.ROAD_WIDTH is read from a module-scope
+      object (single property lookup, O(1)).
+
+performance_budget_analysis:
+  requirement: "REQ-PLAYER-010: single-frame overhead <= 1ms"
+  frame_budget_ms: 16.67
+  requirement_budget_ms: 1.0
+  estimated_overhead_ms: "<<0.1"
+  operations_per_frame: |
+    Fast path (gamePaused=true or gameOverFlag=true): 1 boolean check + 1 return
+    Normal path (no keys pressed):
+      5 guard condition checks (boolean reads)
+      1 isNaN check
+      1 property read (player.speed || 5)
+      2 Boolean reads (keys.ArrowLeft, keys.ArrowRight)
+      1 no-op newX assignment
+      2 arithmetic operations (canvas.width/2 - ROAD_WIDTH, canvas.width/2 + ROAD_WIDTH)
+      2 Math function calls (Math.max, Math.min)
+      1 property write (player.x)
+      Total: ~15 operations
+    Moving path: same as normal + 1 arithmetic (newX = player.x +/- speed)
+  verdict: "Well within budget. No performance concern."
+
+data_scale_context:
+  game_type: "Browser Canvas game, 60fps target"
+  player_count: 1 (single player object)
+  keys_state_fields: 2 (ArrowLeft, ArrowRight — Boolean)
+  canvas_dimensions: "900x700px (fixed)"
+  frame_rate_target: 60
+  updatePlayerPosition_calls_per_second: 60
+  event_rate_keydown_keyup: "<<10/sec (human input rate)"
+
+uncertainties: []
+
+reviewer_notes: |
+  The implementation is a textbook-clean O(1) frame-update function. The
+  design decision to use a polling (keys state object) pattern rather than
+  direct event-driven movement is the correct performance choice for a
+  Canvas game loop: it eliminates OS key-repeat delay artifacts and keeps
+  movement logic deterministic per-frame (BS-010 requirement satisfied
+  without any additional code).
+
+  The two info-level findings are purely documentation observations. Neither
+  requires action under the current architecture. The implementation satisfies
+  REQ-PLAYER-010 (<=1ms/frame) with approximately 99% margin.
+
+  PERF-05 (index validation) is structurally not applicable to this codebase
+  and has been recorded as such rather than left as a silent omission.
+
+---

@@ -1,0 +1,115 @@
+---
+review_report:
+  title: "迁移至 Phaser 3 游戏引擎 审查报告（第 2 轮）"
+  reviewer: "challenger-agent"
+  date: "2026-03-30"
+  round: 2
+  requirement_source: "hhspec/specs/requirements/CORE/REQ-CORE-001-phaser3-migration.md"
+  impact_source: "hhspec/changes/game-engine-upgrade/impact.md"
+
+  verdict: "PASS"
+
+  fix_verification:
+    previous_round: 1
+    previous_issues:
+      - id: "ISS-L0C-001"
+        status: "FIXED"
+        evidence: "需求文档第 6.2.4 节已新增字段级覆盖度清单，穷举了 5 类配置对象共 31 个字段（Phaser 游戏配置 9 字段、Scene 生命周期 3 方法、Arcade Physics 7 字段、Sound Manager 4 字段、Vite 配置 5 字段）。证据：REQ-CORE-001-phaser3-migration.md:334-367"
+
+      - id: "ISS-L0C-004"
+        status: "FIXED"
+        evidence: "需求文档第 6.2.2 节表格已增加'入参字段变化'和'出参字段变化'列，逐接口逐字段标注了变化。10 个接口/模块均已标注入参出参字段变化（game 对象 9 字段、player 对象 6 字段、playSound 新增 3 可选参数等）。证据：REQ-CORE-001-phaser3-migration.md:306-318"
+
+      - id: "ISS-L0C-005"
+        status: "FIXED"
+        evidence: "需求文档第 6.2.3 节表格已增加'verify_fields'列，逐消费方穷举了需验证的字段。10 个消费方均已标注 verify_fields（weaponManager.js 验证 game.weaponDrops/player.weapon，weaponUI.js 验证 game.gold/game.wave/player.weapon 等）。证据：REQ-CORE-001-phaser3-migration.md:321-333"
+
+      - id: "ISS-L0C-006"
+        status: "FIXED"
+        evidence: "影响分析报告第 6.1 节已修正测试覆盖评分标准（0=完整测试 80%+，1=较高测试 60-80%，2=部分测试 30-60%，3=无测试 <30%），并重新评估了各领域的测试覆盖评分（CORE 评分 2，PLAYER 评分 3，WEAPON 评分 1，COMBAT 评分 3，UI 评分 2，音效系统评分 3，构建工具评分 3）。风险矩阵已更新，加权分计算正确。证据：impact.md:489-515"
+
+  dimensions:
+    coverage:
+      status: "PASS"
+      passed_items:
+        - "COV-01: 每条用户故事至少有一组 Gherkin 成功路径场景。验证通过：US-001~007 对应 REQ-CORE-001~023，12 个 Scenario 覆盖所有用户故事"
+        - "COV-02: 每条功能需求至少有一组 Gherkin 失败路径场景。验证通过：边界场景 BS-001~010 覆盖异常流（WebGL 不可用、资源加载失败、浏览器禁用音频等）"
+        - "COV-03: 7 大边界类别均已识别。验证通过：BS-001（网络/资源）、BS-002/003/009（极值）、BS-004（并发）、BS-006（权限/环境）、BS-007（空值）、BS-008（数据完整性）、BS-005/010（状态流转）"
+        - "COV-04: 每条 EARS 需求只描述一个系统行为。验证通过：REQ-CORE-001~023 均为单一行为，无 and/or 合并"
+        - "COV-05: EARS 范式使用正确。验证通过：所有需求使用'当...时，系统应...'基础模式，符合 EARS 规范"
+        - "COV-06: Gherkin Then 步骤只描述可观察结果。验证通过：所有 Then 步骤均为可观察结果（如'渲染器类型为 WebGL'、'粒子数量不少于 12 个'），无实现细节"
+        - "COV-07: 每个 Scenario 只测试一个业务行为。验证通过：12 个 Scenario 均为单一行为测试"
+        - "COV-08: 需求编号完整性。验证通过：REQ-CORE-001~023、OPT-CORE-001，无重复、无断号"
+        - "COV-09: 追溯链完整。验证通过：所有 Gherkin Scenario 标注了关联需求编号（# 关联需求: REQ-CORE-XXX），边界场景表格包含'关联需求'列"
+        - "COV-10: 无模糊表述。验证通过：所有度量指标有具体数值（60 FPS、3 秒、500KB、50ms、400 像素、12 个粒子等）"
+        - "COV-11: UI 交互流程完整。验证通过：虽为技术优化，但边界场景 BS-006 覆盖了 UI 交互异常流（浏览器禁用音频时游戏逻辑不受影响）"
+        - "COV-12: 术语一致性。验证通过：术语表定义 15 个核心术语，全文使用一致（Phaser 3、WebGL、Arcade Physics、Vite、HMR 等）"
+        - "COV-13: 验收策略完整性。验证通过：技术优化类需求使用 metric_comparison 模板，包含基线值、目标值、测量工具、测量条件"
+        - "COV-14: 覆盖度清单字段级穷举。验证通过：6.2.4 节穷举了 5 类配置对象共 31 个字段（Phaser 游戏配置 9 字段、Scene 生命周期 3 方法、Arcade Physics 7 字段、Sound Manager 4 字段、Vite 配置 5 字段）"
+        - "COV-15: UI 字段三类拆分。不适用：本需求为技术优化，无新增 UI 界面"
+        - "COV-16: 导出字段穷举。不适用：本需求不涉及导出/报表/产出物功能"
+        - "COV-17: 技术优化接口字段变化。验证通过：6.2.2 节逐接口逐字段标注了入参/出参变化（10 个接口/模块，含 game 对象 9 字段、player 对象 6 字段、playSound 新增 3 可选参数等）"
+        - "COV-18: 技术优化下游消费方穷举。验证通过：6.2.3 节穷举了 10 个消费方及其 verify_fields（weaponManager.js、weaponUI.js、weaponWaveSelect.js、weaponDropIntegration.js、weaponMergeAnimation.js、index.html、style.css、scripts/start.sh、无导出、无第三方）"
+        - "COV-19: 功能需求字段覆盖。不适用：本需求为技术优化，非功能需求"
+      issues: []
+
+    feasibility:
+      status: "PASS"
+      passed_items:
+        - "FEA-01: 需求内部一致性。验证通过：用户故事、EARS 需求、Gherkin 场景三者语义一致（如 US-001 → REQ-CORE-022 → Scenario 'webgl可用时_游戏初始化_使用WebGL渲染器'）"
+        - "FEA-02: 需求间无冲突。验证通过：21 条功能需求无逻辑矛盾"
+        - "FEA-03: 技术风险已识别。验证通过：需求文档第 7 节标注 8 项不确定性（UC-001~008），影响分析报告第 6.3 节专项分析 2 个高风险项（CORE 游戏主循环迁移、COMBAT 碰撞检测迁移）"
+        - "FEA-04: 外部依赖明确。验证通过：需求文档明确依赖 Phaser 3（版本待确认 UC-001）、Vite 构建工具、浏览器 WebGL 支持（Chrome 120+/Firefox 120+/Safari 17+）"
+        - "FEA-05: 上游追溯完整。验证通过：影响分析报告第 2 节列出 8 个直接依赖（Canvas 2D 渲染、手写渲染函数、Web Audio API、Math.hypot 碰撞检测、全局变量模块加载、游戏主循环、全局 game/player 对象）和 6 个间接依赖（weaponManager/weaponUI/weaponWaveSelect/weaponDropIntegration/weaponMergeAnimation 全局对象、localStorage 持久化）"
+        - "FEA-06: 下游扩散完整。验证通过：影响分析报告第 3 节列出 14 个直接影响（game.js 6 项 breaking、6 个 weapon*.js 模块 breaking、index.html/style.css/scripts/start.sh）和 5 个级联影响（2 层传播）"
+        - "FEA-07: 流程链完整。验证通过：影响分析报告第 4 节识别 9 个受影响流程（游戏初始化、游戏主循环、玩家射击、碰撞检测、音效播放、武器掉落、波次武器选择、武器合成动画、开发构建），每个流程标注切入点和链路完整性"
+        - "FEA-08: 变更范围完整。验证通过：影响分析报告第 5.1 节列出 3 个受影响 Spec（domain-model、INTEGRATION-api-design、INTEGRATION-test-detail），每个 Spec 标注 change_type（modify）、impact_type（breaking）、confidence（高）、risk_level（高/中）"
+        - "FEA-09: 风险评估合理。验证通过：影响分析报告第 6.1 节使用五维加权模型（影响范围 30%、变更深度 25%、耦合程度 20%、测试覆盖 15%、可逆性 10%），评分标准正确，7 个领域加权分计算准确（CORE 2.70、PLAYER 2.30、WEAPON 1.70、COMBAT 2.85、UI 1.65、音效系统 1.85、构建工具 1.80），风险等级与加权分匹配（≥2.5=高，1.5-2.5=中）"
+        - "FEA-10: 兼容性判断正确。验证通过：影响分析报告第 6.2 节列出 9 个接口/数据模型的兼容性结论（3 个不兼容需删除、3 个协议兼容接口签名不变、2 个完全兼容、1 个 localStorage 完全兼容），每个结论有证据支撑"
+      issues: []
+
+    split:
+      status: "PASS"
+      passed_items:
+        - "SPL-01: 单一职责。验证通过：本需求只包含一个业务能力（引擎迁移），无'顺便也做了 Y'的需求"
+        - "SPL-02: 独立交付性。验证通过：本需求可独立开发、测试和部署，无隐性耦合"
+        - "SPL-03: 粒度合理性。验证通过：虽涉及多个文件（game.js + 6 个 weapon*.js + index.html + style.css + scripts/start.sh），但为架构级重构，必须同步修改，拆分会导致系统不可用"
+        - "SPL-04: 用户故事原子性。验证通过：7 条用户故事均描述完整的用户价值（US-001 稳定 60 FPS、US-002 爆炸特效、US-003 子弹拖尾、US-004 碰撞检测准确、US-005 空间音效、US-006 ES 模块化、US-007 游戏逻辑不变）"
+        - "SPL-05: 依赖关系清晰。验证通过：影响分析报告第 5.2 节定义 8 个 Phase 的执行顺序（Phase 1 基础设施 → Phase 2 核心模块 → Phase 3 游戏主循环 → Phase 4 渲染层 → Phase 5 物理引擎 → Phase 6 音效系统 → Phase 7 粒子特效 → Phase 8 测试验证），依赖方向无环"
+        - "SPL-06: 混合需求已拆分。不适用：本需求为单一类型（技术优化），无混合类型"
+      issues: []
+      split_proposals: []
+
+  issues: []
+
+  skipped_checks: []
+
+  uncertainties:
+    - id: "UNC-L0C-001"
+      question: "Phaser 3 版本选择（3.80+ 最新版 vs 3.55 LTS）是否已确认？"
+      impact: "影响 REQ-CORE-001、REQ-CORE-016 的实现方案和兼容性测试范围"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-001），建议在 L3 实现前由用户确认版本策略"
+
+    - id: "UNC-L0C-002"
+      question: "赛博朋克士兵角色（drawCyberSoldier）迁移方案（Graphics 动态绘制 vs 预渲染 Sprite）是否已确认？"
+      impact: "影响 REQ-CORE-005 的实现复杂度和性能表现"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-002），建议先用 Graphics 快速迁移，性能不达标时再优化为 Sprite"
+
+    - id: "UNC-L0C-003"
+      question: "音效资源格式（Web Audio API 合成 vs MP3/OGG 文件）是否已确认？"
+      impact: "影响 REQ-CORE-011~015 的实现方案和资源体积"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-004），建议引入轻量级音效文件（每个 < 10KB）提升音质"
+
+    - id: "UNC-L0C-004"
+      question: "性能目标设备（MacBook Pro M1）是否为最低配置要求？"
+      impact: "影响 REQ-CORE-022、OPT-CORE-001 的性能基线和优化策略"
+      suggestion: "需求文档和影响分析报告均标注为待确认（UC-008），建议明确最低配置要求（如 Intel i5 双核），并据此调整粒子数量和特效复杂度"
+
+  summary:
+    total_issues: 0
+    must_fix_count: 0
+    suggest_count: 0
+    coverage_score: "PASS - 19/19 项通过（COV-15/16/19 不适用于技术优化类需求）"
+    feasibility_score: "PASS - 10/10 项通过"
+    split_score: "PASS - 6/6 项通过（SPL-06 不适用于单一类型需求）"
+---

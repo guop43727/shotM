@@ -1,0 +1,93 @@
+metadata:
+  change_name: mobile-warrior-system
+  module: PLAYER
+  generated_at: "2026-04-02"
+  generated_by: l2-coordinator
+  total_requirements: 10
+  covered: 10
+  user_approved_skips: 0
+  coverage_rate: "100%"
+  bootstrap_mode: false
+
+requirements:
+  - id: REQ-PLAYER-001
+    type: functional
+    description: "按下 ArrowLeft 键时，player.x 以 player.speed px/帧向左减少，钳制到左边界 150"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §2.3 updatePlayerPosition 伪代码 — 左移分支"
+      - section: "PLAYER-test-detail.md — TC-001, TC-002"
+
+  - id: REQ-PLAYER-002
+    type: functional
+    description: "按下 ArrowRight 键时，player.x 以 player.speed px/帧向右增加，钳制到右边界 750"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §2.3 updatePlayerPosition 伪代码 — 右移分支"
+      - section: "PLAYER-test-detail.md — TC-003, TC-004"
+
+  - id: REQ-PLAYER-003
+    type: functional
+    description: "松开 ArrowLeft 或 ArrowRight 键时立即停止对应方向位置更新"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §2.2 keys 状态对象 — keyup 处理"
+      - section: "PLAYER-test-detail.md — TC-008, TC-009"
+
+  - id: REQ-PLAYER-004
+    type: functional
+    description: "player.x 超出 [150, 750] 时钳制到最近边界值"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §2.3 updatePlayerPosition 伪代码 — Math.max/Math.min 钳制"
+      - section: "PLAYER-test-detail.md — TC-002, TC-004, TC-005, TC-006"
+
+  - id: REQ-PLAYER-005
+    type: functional
+    description: "gamePaused = true 时跳过 player.x 移动更新"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §2.3 updatePlayerPosition 伪代码 — gamePaused 守卫"
+      - section: "PLAYER-test-detail.md — TC-007"
+
+  - id: REQ-PLAYER-006
+    type: functional
+    description: "gameOverFlag = true 时跳过 player.x 移动更新"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §2.3 updatePlayerPosition 伪代码 — gameOverFlag 守卫"
+      - section: "PLAYER-test-detail.md — TC-010"
+
+  - id: REQ-PLAYER-007
+    type: functional
+    description: "gameLoop 每帧在 drawPlayer() 之前调用 updatePlayerPosition()"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §3 gameLoop 插入点说明"
+      - section: "PLAYER-test-detail.md — TC-011"
+
+  - id: REQ-PLAYER-008
+    type: functional
+    description: "Bullet 创建时使用当前帧已更新的 player.x（推断需求，无需新增代码）"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §3 gameLoop 插入点说明 — 调用顺序保证"
+      - section: "PLAYER-test-detail.md — TC-011（子弹起点验证）"
+
+  - id: REQ-PLAYER-010
+    type: non_functional
+    description: "移动逻辑单帧处理时间增量 <= 1ms"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §5 非功能性设计约束"
+      - section: "PLAYER-test-detail.md — TC-PERF-001（性能抽样测试）"
+
+  - id: REQ-PLAYER-011
+    type: constraint
+    description: "不修改 weaponManager.js、weaponUI.js、weaponWaveSelect.js 的函数签名或对象结构"
+    coverage_status: covered
+    covered_by:
+      - section: "PLAYER-movement-design.md §1.3 范围约束 — 仅修改 game.js"
+      - section: "PLAYER-test-detail.md — TC-CONSTRAINT-001（文件隔离验证）"
+
+user_approvals: []

@@ -1,0 +1,245 @@
+{
+  "unit_id": "UNIT-002-WEAPON",
+  "unit_name": "Weapon System Migration",
+  "implementer": "L3-Implementer",
+  "timestamp": "2026-03-31T11:22:45.103Z",
+  "traceability_map": {
+    "requirements": [
+      {
+        "constraint_id": "REQ-WEAPON-001",
+        "constraint_type": "L0_requirement",
+        "description": "Weapon system preserves existing functionality (evolution/merge/drop)",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponManager.js:1-180",
+          "src/systems/WeaponEvolution.js:1-95",
+          "src/systems/WeaponMerge.js:1-155"
+        ],
+        "evidence": "WeaponManager class provides getInventory(), addWeapon(), evolveWeapon(), evolveToMax(), fuseUltimate() methods migrated from weaponManager.js"
+      },
+      {
+        "constraint_id": "REQ-WEAPON-002",
+        "constraint_type": "L0_requirement",
+        "description": "Weapon UI uses Phaser DOM Element or HTML Overlay",
+        "status": "implemented",
+        "impl_location": [
+          "src/ui/WeaponUI.js:1-250"
+        ],
+        "evidence": "WeaponUI class uses HTML overlay (document.getElementById) for modal interface, emits events via scene.events (Phaser EventEmitter)"
+      },
+      {
+        "constraint_id": "REQ-WEAPON-003",
+        "constraint_type": "L0_requirement",
+        "description": "Weapon drops use Phaser Sprite",
+        "status": "implemented",
+        "impl_location": [
+          "src/gameobjects/WeaponDrop.js:1-58"
+        ],
+        "evidence": "WeaponDrop extends Phaser.GameObjects.Sprite, uses scene.physics.add.existing(this) for Arcade Physics"
+      },
+      {
+        "constraint_id": "REQ-WEAPON-004",
+        "constraint_type": "L0_requirement",
+        "description": "Wave weapon selection interface preserved",
+        "status": "implemented",
+        "impl_location": [
+          "src/ui/WeaponWaveSelect.js:1-60"
+        ],
+        "evidence": "WeaponWaveSelect class provides show() and selectWeapon() methods migrated from weaponWaveSelect.js"
+      }
+    ],
+    "design_constraints": [
+      {
+        "constraint_id": "L0-AC-001",
+        "constraint_type": "acceptance_criteria",
+        "description": "Weapon collection and persistence",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponManager.js:35-68"
+        ],
+        "evidence": "_loadInventory() loads from localStorage with sessionStorage fallback, _saveInventory() persists inventory"
+      },
+      {
+        "constraint_id": "L0-AC-002",
+        "constraint_type": "acceptance_criteria",
+        "description": "3:1 synthesis with atomic rollback",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponMerge.js:10-50",
+          "src/systems/WeaponMerge.js:60-110"
+        ],
+        "evidence": "mergeWeapons() and mergeToMax() create inventory snapshots, rollback on save failure"
+      },
+      {
+        "constraint_id": "L0-AC-003",
+        "constraint_type": "acceptance_criteria",
+        "description": "Ultimate fusion (3 Super → Ultimate Laser)",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponMerge.js:120-155"
+        ],
+        "evidence": "fuseUltimateWeapon() requires super_rifle + super_machinegun + super_shotgun, produces ultimate_laser"
+      },
+      {
+        "constraint_id": "FR-WEP-003",
+        "constraint_type": "functional_requirement",
+        "description": "Complete evolution tree configuration",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponEvolution.js:10-30"
+        ],
+        "evidence": "WEAPON_CONFIG defines all 13 weapon types (3 paths × 4 tiers + ultimate)"
+      },
+      {
+        "constraint_id": "FR-WEP-004",
+        "constraint_type": "functional_requirement",
+        "description": "Ultimate fusion logic",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponEvolution.js:50-75"
+        ],
+        "evidence": "buildEvolutionTree() checks canFuse condition (all 3 super weapons owned)"
+      }
+    ],
+    "api_contracts": [
+      {
+        "constraint_id": "API-WEAPON-001",
+        "constraint_type": "api_contract",
+        "description": "WeaponManager.getInventory() returns inventory snapshot",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponManager.js:72-75"
+        ],
+        "evidence": "Returns shallow copy { ...this.inventory } to prevent external mutation"
+      },
+      {
+        "constraint_id": "API-WEAPON-002",
+        "constraint_type": "api_contract",
+        "description": "WeaponManager.addWeapon(weaponId) adds weapon and emits event",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponManager.js:95-107"
+        ],
+        "evidence": "Validates weaponId, updates inventory immutably, emits 'weapon:added' event"
+      },
+      {
+        "constraint_id": "API-WEAPON-003",
+        "constraint_type": "api_contract",
+        "description": "WeaponManager.evolveWeapon(weaponId) performs 3:1 merge",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponManager.js:130-143"
+        ],
+        "evidence": "Delegates to WeaponMerge.mergeWeapons(), emits 'weapon:merged' on success"
+      },
+      {
+        "constraint_id": "API-WEAPON-004",
+        "constraint_type": "api_contract",
+        "description": "WeaponDrop.collect() triggers weapon manager",
+        "status": "implemented",
+        "impl_location": [
+          "src/gameobjects/WeaponDrop.js:48-55"
+        ],
+        "evidence": "Marks collected, calls scene.weaponManager.collectDrop(), destroys sprite"
+      }
+    ],
+    "code_structure": [
+      {
+        "constraint_id": "STRUCT-WEAPON-001",
+        "constraint_type": "code_structure",
+        "description": "Weapon system organized in src/systems/",
+        "status": "implemented",
+        "impl_location": [
+          "src/systems/WeaponManager.js",
+          "src/systems/WeaponEvolution.js",
+          "src/systems/WeaponMerge.js"
+        ],
+        "evidence": "Core weapon logic in systems/ directory"
+      },
+      {
+        "constraint_id": "STRUCT-WEAPON-002",
+        "constraint_type": "code_structure",
+        "description": "Weapon UI components in src/ui/",
+        "status": "implemented",
+        "impl_location": [
+          "src/ui/WeaponUI.js",
+          "src/ui/WeaponWaveSelect.js"
+        ],
+        "evidence": "UI components separated from business logic"
+      },
+      {
+        "constraint_id": "STRUCT-WEAPON-003",
+        "constraint_type": "code_structure",
+        "description": "Weapon drop sprite in src/gameobjects/",
+        "status": "implemented",
+        "impl_location": [
+          "src/gameobjects/WeaponDrop.js"
+        ],
+        "evidence": "Phaser GameObject in gameobjects/ directory"
+      }
+    ]
+  },
+  "coverage_summary": {
+    "total_constraints": 14,
+    "implemented_constraints": 14,
+    "blocked_constraints": 0,
+    "coverage_percentage": 100
+  },
+  "change_manifest": {
+    "files": {
+      "added": [
+        {
+          "path": "src/systems/WeaponManager.js",
+          "purpose": "Core weapon management system (inventory, evolution, merge)",
+          "constraints": ["REQ-WEAPON-001", "L0-AC-001", "L0-AC-002", "L0-AC-003", "API-WEAPON-001", "API-WEAPON-002", "API-WEAPON-003"]
+        },
+        {
+          "path": "src/systems/WeaponEvolution.js",
+          "purpose": "Weapon evolution configuration and tree building",
+          "constraints": ["REQ-WEAPON-001", "FR-WEP-003", "FR-WEP-004"]
+        },
+        {
+          "path": "src/systems/WeaponMerge.js",
+          "purpose": "Weapon merge logic (3:1 synthesis, ultimate fusion)",
+          "constraints": ["REQ-WEAPON-001", "L0-AC-002", "L0-AC-003"]
+        },
+        {
+          "path": "src/ui/WeaponUI.js",
+          "purpose": "Weapon management modal UI (inventory/evolution/synthesis tabs)",
+          "constraints": ["REQ-WEAPON-002"]
+        },
+        {
+          "path": "src/ui/WeaponWaveSelect.js",
+          "purpose": "Wave weapon selection interface",
+          "constraints": ["REQ-WEAPON-004"]
+        },
+        {
+          "path": "src/gameobjects/WeaponDrop.js",
+          "purpose": "Weapon drop Phaser sprite with collision detection",
+          "constraints": ["REQ-WEAPON-003", "API-WEAPON-004"]
+        }
+      ],
+      "modified": [],
+      "deleted": []
+    },
+    "modules_affected": ["WEAPON"]
+  },
+  "dependencies": {
+    "internal": [
+      "src/core/GameState.js",
+      "src/scenes/GameScene.js"
+    ],
+    "external": [
+      "phaser"
+    ]
+  },
+  "notes": [
+    "All 6 weapon system files created in src/ directory structure",
+    "WeaponManager uses Phaser EventEmitter (scene.events) for weapon events",
+    "WeaponUI preserves HTML overlay approach (not Phaser DOM Element) for simpler integration",
+    "WeaponDrop extends Phaser.GameObjects.Sprite with Arcade Physics",
+    "Storage uses localStorage with sessionStorage fallback (migrated from weaponManager.js)",
+    "All merge operations use immutable patterns (snapshot/rollback on failure)",
+    "GameScene integration deferred to UNIT-004 (combat integration)"
+  ]
+}

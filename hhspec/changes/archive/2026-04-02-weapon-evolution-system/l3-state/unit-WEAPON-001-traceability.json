@@ -1,0 +1,186 @@
+{
+  "unit_id": "WEAPON-001",
+  "unit_name": "WeaponManager Core Business Logic",
+  "implementer": "l3_implementer",
+  "timestamp": "2026-03-30T09:15:00.000Z",
+  "fix_round": 1,
+  "constraint_coverage": {
+    "total_constraints": 18,
+    "implemented_constraints": 18,
+    "coverage_percentage": 100
+  },
+  "constraint_mappings": [
+    {
+      "constraint_id": "FR-WEP-001",
+      "constraint_type": "functional_requirement",
+      "description": "localStorage persistence with key monsterTide_weaponInventory",
+      "impl_location": "weaponManager.js:369-376",
+      "impl_method": "saveInventory()",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "FR-WEP-002",
+      "constraint_type": "functional_requirement",
+      "description": "3:1 synthesis ratio with atomic rollback",
+      "impl_location": "weaponManager.js:189-234",
+      "impl_method": "mergeWeapons()",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "FR-WEP-003",
+      "constraint_type": "functional_requirement",
+      "description": "Complete evolution tree (13 weapon types)",
+      "impl_location": "weaponManager.js:7-24",
+      "impl_method": "weaponEvolutionConfig",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "FR-WEP-004",
+      "constraint_type": "functional_requirement",
+      "description": "Ultimate fusion: 3 Super → Ultimate Laser",
+      "impl_location": "weaponManager.js:328-361",
+      "impl_method": "fuseUltimateWeapon()",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "DATA-004",
+      "constraint_type": "error_code",
+      "description": "Unknown weapon type validation (BLOCK-005 fixed)",
+      "impl_location": "weaponManager.js:175-178, 239-242",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "BIZ-002",
+      "constraint_type": "error_code",
+      "description": "Material insufficient (<3 for merge) and ownership check",
+      "impl_location": "weaponManager.js:204-207, 246-249",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "BIZ-003",
+      "constraint_type": "error_code",
+      "description": "Cannot merge currently equipped weapon",
+      "impl_location": "weaponManager.js:208-211",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "BIZ-004",
+      "constraint_type": "error_code",
+      "description": "Max tier weapon cannot merge",
+      "impl_location": "weaponManager.js:197-200",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "BIZ-005",
+      "constraint_type": "error_code",
+      "description": "Ultimate fusion materials insufficient",
+      "impl_location": "weaponManager.js:332-335",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "STOR-001",
+      "constraint_type": "error_code",
+      "description": "localStorage quota exceeded",
+      "impl_location": "weaponManager.js:51-55",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "DATA-002",
+      "constraint_type": "error_code",
+      "description": "JSON parse failed",
+      "impl_location": "weaponManager.js:110-114",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "V-001",
+      "constraint_type": "validation_rule",
+      "description": "weaponType must exist in weaponConfig",
+      "impl_location": "weaponManager.js:175-178, 197, 239-242",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "V-003",
+      "constraint_type": "validation_rule",
+      "description": "Ownership check before equipping (BLOCK-006 fixed)",
+      "impl_location": "weaponManager.js:244-249",
+      "impl_method": "equipWeapon()",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "STEP-01",
+      "constraint_type": "business_logic",
+      "description": "getInventory returns copy",
+      "impl_location": "weaponManager.js:166-171",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "STEP-02",
+      "constraint_type": "business_logic",
+      "description": "addWeapon increments count, saves, and auto-equips (BLOCK-001 fixed)",
+      "impl_location": "weaponManager.js:174-207",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "STEP-03",
+      "constraint_type": "business_logic",
+      "description": "mergeWeapons 3:1 synthesis",
+      "impl_location": "weaponManager.js:189-234",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "NFR-WEP-002",
+      "constraint_type": "non_functional_requirement",
+      "description": "sessionStorage fallback when localStorage full",
+      "impl_location": "weaponManager.js:69-79",
+      "status": "implemented"
+    },
+    {
+      "constraint_id": "IMMUTABILITY",
+      "constraint_type": "code_quality",
+      "description": "validateInventory returns new object instead of mutating (BLOCK-007 fixed)",
+      "impl_location": "weaponManager.js:118-137",
+      "impl_method": "StorageAdapter.validateInventory()",
+      "status": "implemented"
+    }
+  ],
+  "blocking_issues_fixed": [
+    {
+      "issue_id": "BLOCK-001",
+      "title": "Auto-equip logic missing",
+      "fix_location": "weaponManager.js:186-204",
+      "fix_description": "Added auto-equip logic in addWeapon() that equips highest rarity weapon when player has no equipped weapon or doesn't own the currently equipped weapon"
+    },
+    {
+      "issue_id": "BLOCK-005",
+      "title": "Wrong error code - should use DATA-004 instead of BIZ-002",
+      "fix_location": "weaponManager.js:176-178",
+      "fix_description": "Changed error code from BIZ-002 to DATA-004 for unknown weapon type validation"
+    },
+    {
+      "issue_id": "BLOCK-006",
+      "title": "Missing ownership check in equipWeapon()",
+      "fix_location": "weaponManager.js:244-249",
+      "fix_description": "Added ownership check that verifies weapon exists in inventory before equipping, returns error object if not owned"
+    },
+    {
+      "issue_id": "BLOCK-007",
+      "title": "Immutability violation in validateInventory()",
+      "fix_location": "weaponManager.js:118-137",
+      "fix_description": "Changed validateInventory() to return new validated object instead of mutating input object directly"
+    },
+    {
+      "issue_id": "BLOCK-008",
+      "title": "Silent error handling in addWeapon()",
+      "fix_location": "weaponManager.js:174-207",
+      "fix_description": "Changed addWeapon() to return result object with success/error status instead of returning undefined on error"
+    }
+  ],
+  "files_modified": [
+    {
+      "file_path": "/Users/peiguo/IdeaProjects/shotM/weaponManager.js",
+      "change_type": "modified",
+      "lines_changed": 65,
+      "purpose": "Fixed 5 blocking issues: auto-equip logic, error code correction, ownership check, immutability, and error handling"
+    }
+  ]
+}

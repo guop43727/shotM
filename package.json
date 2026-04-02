@@ -1,13 +1,13 @@
 {
   "name": "shotm",
   "version": "1.0.0",
-  "description": "直接在浏览器中打开 `index.html` 文件即可开始游戏。",
-  "main": "game.js",
-  "directories": {
-    "test": "tests"
-  },
+  "description": "MONSTER TIDE - 赛博朋克塔防射击游戏",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "jest --experimental-vm-modules"
   },
   "repository": {
     "type": "git",
@@ -16,12 +16,19 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/guop43727/shotM/issues"
   },
   "homepage": "https://github.com/guop43727/shotM#readme",
+  "dependencies": {
+    "phaser": "3.80.1"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.58.2",
+    "jest": "^30.3.0",
+    "vite": "^5.4.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmmirror.com"
   }
 }

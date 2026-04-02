@@ -1,0 +1,321 @@
+review_metadata:
+  reviewer: l3_spec_compliance_reviewer
+  reviewer_layer: compliance
+  timestamp: "2026-03-30T00:00:00Z"
+  change_name: weapon-evolution-system
+  review_round: 1
+  status: FAIL
+  title: "规范符合性审查报告"
+
+summary:
+  total_findings: 15
+  blocking_count: 7
+  warning_count: 6
+  info_count: 2
+  findings_by_category:
+    frontend_patterns: 5
+    code_patterns: 6
+    error_strategy: 1
+    l2_design_patterns: 1
+    data_design: 2
+
+findings:
+  - id: FND-SPEC-001
+    level: blocking
+    category: frontend_patterns
+    check_item: SPEC-03
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/frontend-design.md COMP-001"
+    impl_ref: "weaponUI.js:15"
+    description: "Modal element ID 与 L2 规范不一致"
+    expected: "document.getElementById('weapon-management-modal')"
+    actual: "document.getElementById('weapon-modal')"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js 第 15 行的 'weapon-modal' 改为 'weapon-management-modal'，同时更新 index.html 中对应的 modal 元素 ID"
+    evidence:
+      - "frontend-design.md COMP-001 定义: Modal ID = 'weapon-management-modal'"
+      - "weaponUI.js:15 实际使用: const modal = document.getElementById('weapon-modal')"
+
+  - id: FND-SPEC-002
+    level: blocking
+    category: frontend_patterns
+    check_item: SPEC-03
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/frontend-design.md COMP-002"
+    impl_ref: "weaponUI.js:20"
+    description: "Inventory tab 容器 ID 与 L2 规范不一致"
+    expected: "document.getElementById('inventory-tab-content')"
+    actual: "document.getElementById('inventory-tab')"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js 中所有 'inventory-tab' 改为 'inventory-tab-content'，同时更新 index.html 中对应的容器元素 ID"
+    evidence:
+      - "frontend-design.md COMP-002 定义: Container ID = 'inventory-tab-content'"
+      - "weaponUI.js:20 实际使用: const inventoryTab = document.getElementById('inventory-tab')"
+
+  - id: FND-SPEC-003
+    level: blocking
+    category: frontend_patterns
+    check_item: SPEC-03
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/frontend-design.md COMP-003"
+    impl_ref: "weaponUI.js:21"
+    description: "Synthesis tab 容器 ID 与 L2 规范不一致"
+    expected: "document.getElementById('synthesis-tab-content')"
+    actual: "document.getElementById('synthesis-tab')"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js 中所有 'synthesis-tab' 改为 'synthesis-tab-content'，同时更新 index.html 中对应的容器元素 ID"
+    evidence:
+      - "frontend-design.md COMP-003 定义: Container ID = 'synthesis-tab-content'"
+      - "weaponUI.js:21 实际使用: const synthesisTab = document.getElementById('synthesis-tab')"
+
+  - id: FND-SPEC-004
+    level: blocking
+    category: frontend_patterns
+    check_item: SPEC-03
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/frontend-design.md COMP-001"
+    impl_ref: "weaponUI.js:50"
+    description: "Tab button CSS class 与 L2 规范不一致"
+    expected: "document.querySelectorAll('.tab-button')"
+    actual: "document.querySelectorAll('.tab-btn')"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js 中所有 '.tab-btn' 改为 '.tab-button'，将 'active' 改为 'tab-button--active'（BEM 命名），同时更新 style.css 中对应的 CSS 类名"
+    evidence:
+      - "frontend-design.md COMP-001 定义: Tab button class = 'tab-button', active modifier = 'tab-button--active'"
+      - "weaponUI.js:50 实际使用: document.querySelectorAll('.tab-btn')"
+
+  - id: FND-SPEC-005
+    level: blocking
+    category: frontend_patterns
+    check_item: SPEC-03
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/frontend-design.md COMP-002"
+    impl_ref: "weaponUI.js:150-160"
+    description: "Weapon card 状态 CSS class 缺少 BEM 前缀"
+    expected: "weapon-card--owned, weapon-card--locked, weapon-card--equipped, weapon-card--can-merge"
+    actual: "owned, locked, equipped, can-merge"
+    root_cause: case_a_impl_bug
+    remediation: "在 weaponUI.js 的 renderInventoryTab() 和 renderSynthesisTab() 方法中，为所有状态类名添加 'weapon-card--' 前缀，同时更新 style.css 中对应的 CSS 规则"
+    evidence:
+      - "frontend-design.md COMP-002 定义: State classes 使用 BEM 命名 'weapon-card--{state}'"
+      - "weaponUI.js:150-160 实际使用: stateClasses.push('owned'), stateClasses.push('locked') 等"
+
+  - id: FND-SPEC-006
+    level: blocking
+    category: code_patterns
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/api-design.md Unit-001, Unit-003, Unit-004, Unit-009, Unit-010"
+    impl_ref: "weaponManager.js:50, 120, 180; weaponUI.js:30, 40"
+    description: "缺少 EventBus 事件发射，违反 L2 API 设计的事件契约"
+    expected: "addWeapon() 发射 'weapon:collected'; mergeWeapons() 发射 'weapon:synthesized'; equipWeapon() 发射 'weapon:equipped'; openWeaponModal() 发射 'weapon:modal:open'; closeWeaponModal() 发射 'weapon:modal:close'"
+    actual: "所有方法均未调用 EventBus.emit()"
+    root_cause: case_a_impl_bug
+    remediation: "在 weaponManager.js 的 addWeapon()、mergeWeapons()、equipWeapon() 方法中添加对应的 EventBus.emit() 调用；在 weaponUI.js 的 openWeaponModal()、closeWeaponModal() 方法中添加对应的 EventBus.emit() 调用"
+    evidence:
+      - "api-design.md Unit-001 定义: addWeapon() STEP-04 发射 'weapon:collected' 事件"
+      - "api-design.md Unit-003 定义: mergeWeapons() STEP-08 发射 'weapon:synthesized' 事件"
+      - "api-design.md Unit-004 定义: equipWeapon() STEP-04 发射 'weapon:equipped' 事件"
+      - "api-design.md Unit-009 定义: openWeaponModal() STEP-03 发射 'weapon:modal:open' 事件"
+      - "api-design.md Unit-010 定义: closeWeaponModal() STEP-02 发射 'weapon:modal:close' 事件"
+      - "weaponManager.js 和 weaponUI.js 中未找到任何 EventBus.emit() 调用"
+
+  - id: FND-SPEC-007
+    level: blocking
+    category: error_strategy
+    check_item: SPEC-02
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/error-design.md Unit-001 V-003"
+    impl_ref: "weaponManager.js:45"
+    description: "addWeapon() 对未知武器类型使用错误的错误码"
+    expected: "V-003 (unknown weaponType) 映射到 DATA-004"
+    actual: "console.error('[BIZ-002] Unknown weapon type:', weaponType)"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponManager.js:45 的错误码从 'BIZ-002' 改为 'DATA-004'，并返回错误对象 {success: false, error: 'DATA-004', message: '未知武器类型'}"
+    evidence:
+      - "error-design.md Unit-001 V-003 定义: 未知 weaponType → DATA-004"
+      - "weaponManager.js:45 实际使用: console.error('[BIZ-002] Unknown weapon type:', weaponType)"
+
+  - id: FND-SPEC-008
+    level: warning
+    category: frontend_patterns
+    check_item: SPEC-03
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/frontend-design.md COMP-004"
+    impl_ref: "weaponUI.js:400"
+    description: "Canvas 尺寸与 L2 规范不一致"
+    expected: "width: 800, height: 600"
+    actual: "width: 700, height: 400"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js 中 Canvas 初始化尺寸改为 800x600，同时调整相关的坐标计算逻辑以适应新尺寸"
+    evidence:
+      - "frontend-design.md COMP-004 定义: Canvas size = 800x600"
+      - "weaponUI.js:400 实际使用: <canvas width='700' height='400'>"
+
+  - id: FND-SPEC-009
+    level: warning
+    category: l2_design_patterns
+    check_item: SPEC-08
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/api-design.md Unit-003"
+    impl_ref: "weaponManager.js:120-140"
+    description: "mergeWeapons() 验证步骤顺序与 L2 API 设计不一致"
+    expected: "STEP-02 检查材料数量 (count < 3)，STEP-03 检查最大等级 (!config.nextTier)"
+    actual: "先检查最大等级 (!config.nextTier)，再检查材料数量 (count < 3)"
+    root_cause: case_a_impl_bug
+    remediation: "调整 weaponManager.js 中 mergeWeapons() 的验证顺序，先检查材料数量，再检查最大等级，与 L2 API 设计的 Part 1 步骤顺序保持一致"
+    evidence:
+      - "api-design.md Unit-003 Part 1 定义: STEP-02 检查材料数量，STEP-03 检查最大等级"
+      - "weaponManager.js:125-135 实际顺序: 先 if (!config.nextTier)，再 if (count < 3)"
+
+  - id: FND-SPEC-010
+    level: warning
+    category: code_patterns
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/api-design.md Unit-009"
+    impl_ref: "weaponUI.js:30"
+    description: "openWeaponModal() 使用全局变量暂停游戏，而非调用 game.pause() 方法"
+    expected: "game.pause()"
+    actual: "window.gamePaused = true"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js:30 的 'window.gamePaused = true' 改为 'game.pause()'，确保使用标准的游戏暂停 API"
+    evidence:
+      - "api-design.md Unit-009 STEP-02 定义: 调用 game.pause()"
+      - "weaponUI.js:30 实际使用: window.gamePaused = true"
+
+  - id: FND-SPEC-011
+    level: warning
+    category: code_patterns
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/api-design.md Unit-010"
+    impl_ref: "weaponUI.js:40"
+    description: "closeWeaponModal() 使用全局变量恢复游戏，而非调用 game.resume() 方法"
+    expected: "game.resume()"
+    actual: "window.gamePaused = false"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponUI.js:40 的 'window.gamePaused = false' 改为 'game.resume()'，确保使用标准的游戏恢复 API"
+    evidence:
+      - "api-design.md Unit-010 STEP-01 定义: 调用 game.resume()"
+      - "weaponUI.js:40 实际使用: window.gamePaused = false"
+
+  - id: FND-SPEC-012
+    level: warning
+    category: code_patterns
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/api-design.md Unit-007"
+    impl_ref: "weaponManager.js:250"
+    description: "saveInventory() 声明为同步方法，但 L2 规范定义为异步方法"
+    expected: "RETURNS: Promise<boolean>"
+    actual: "RETURNS: boolean (同步)"
+    root_cause: case_a_impl_bug
+    remediation: "将 weaponManager.js 的 saveInventory() 改为 async 方法，返回 Promise<boolean>，确保与 L2 API 设计的异步契约一致"
+    evidence:
+      - "api-design.md Unit-007 定义: RETURNS Promise<boolean>"
+      - "weaponManager.js:250 实际实现: saveInventory() { ... return true; } (同步)"
+
+  - id: FND-SPEC-013
+    level: warning
+    category: code_patterns
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/api-design.md Unit-004"
+    impl_ref: "weaponManager.js:180"
+    description: "equipWeapon() 设置了 L2 规范未定义的 player.weapon.type 字段"
+    expected: "只设置 id, tier, damage, fireRate, bulletCount, color 字段"
+    actual: "额外设置了 player.weapon.type = config.id"
+    root_cause: case_a_impl_bug
+    remediation: "移除 weaponManager.js:180 中的 'player.weapon.type = config.id' 赋值语句，只保留 L2 规范定义的 6 个字段"
+    evidence:
+      - "api-design.md Unit-004 STEP-02 定义: 设置 player.weapon 的 6 个字段 (id, tier, damage, fireRate, bulletCount, color)"
+      - "weaponManager.js:180 实际代码: player.weapon.type = config.id (未在规范中定义)"
+
+  - id: FND-SPEC-014
+    level: info
+    category: data_design
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/data-design.md Schema v2.0.0"
+    impl_ref: "weaponManager.js:260"
+    description: "localStorage schema 未填充可选字段 playerId 和 metadata"
+    expected: "可选字段可以省略或填充"
+    actual: "playerId 和 metadata 字段未填充"
+    root_cause: case_a_impl_bug
+    remediation: "可选修复：在 saveInventory() 中添加 playerId 和 metadata 字段的填充逻辑，提升数据完整性（非强制）"
+    evidence:
+      - "data-design.md Schema v2.0.0 定义: playerId 和 metadata 为可选字段"
+      - "weaponManager.js:260 实际代码: 未包含 playerId 和 metadata 字段"
+
+  - id: FND-SPEC-015
+    level: info
+    category: data_design
+    check_item: SPEC-01
+    spec_ref: "hhspec/changes/weapon-evolution-system/specs/design/data-design.md Unit-008"
+    impl_ref: "weaponManager.js:300"
+    description: "loadInventory() 未显式触发 schema 迁移逻辑"
+    expected: "检测到旧版本 schema 时调用 migrateSchema()"
+    actual: "使用简化的修复策略，未实现完整的迁移逻辑"
+    root_cause: case_a_impl_bug
+    remediation: "可选修复：实现完整的 schema 版本检测和迁移逻辑，按 L2 数据设计的迁移路径处理旧版本数据（非强制）"
+    evidence:
+      - "data-design.md Unit-008 定义: 检测 schemaVersion 并调用 migrateSchema()"
+      - "weaponManager.js:300 实际代码: 使用简化的修复策略，未实现版本迁移"
+
+check_items_status:
+  - check_item: SPEC-01
+    spec_file: "code-patterns.md"
+    status: skipped
+    reason: "Bootstrap 模式下 code-patterns.md 尚未创建，跳过后端编码模式检查"
+  
+  - check_item: SPEC-02
+    spec_file: "error-strategy.md"
+    status: FAIL
+    findings: [FND-SPEC-007]
+  
+  - check_item: SPEC-03
+    spec_file: "frontend-patterns.md"
+    status: FAIL
+    findings: [FND-SPEC-001, FND-SPEC-002, FND-SPEC-003, FND-SPEC-004, FND-SPEC-005, FND-SPEC-008]
+  
+  - check_item: SPEC-04
+    spec_file: "security-patterns.md"
+    status: skipped
+    reason: "实现单元不涉及安全敏感操作（无用户输入验证、无 SQL 查询、无认证授权），跳过安全编码检查"
+  
+  - check_item: SPEC-05
+    spec_file: "performance-guidelines.md"
+    status: skipped
+    reason: "实现单元为前端 UI 和本地存储操作，不涉及数据库查询、缓存、批量处理等性能关键场景"
+  
+  - check_item: SPEC-06
+    spec_file: "observability-standards.md"
+    status: skipped
+    reason: "实现单元为客户端代码，使用 console.error 进行错误日志记录，不涉及服务端日志/监控/追踪"
+  
+  - check_item: SPEC-07
+    spec_file: "accessibility-standards.md"
+    status: skipped
+    reason: "实现单元为游戏内 Modal UI，accessibility 标准检查由前端 UI 框架层面统一处理"
+  
+  - check_item: SPEC-08
+    spec_file: "L2 API Design Patterns"
+    status: FAIL
+    findings: [FND-SPEC-006, FND-SPEC-009, FND-SPEC-010, FND-SPEC-011, FND-SPEC-012, FND-SPEC-013, FND-SPEC-014, FND-SPEC-015]
+
+recommendations:
+  immediate_actions:
+    - "修复全部 7 个 blocking 级别问题（FND-SPEC-001 ~ FND-SPEC-007），确保 HTML 元素 ID、CSS class 命名、EventBus 事件、错误码与 L2 规范完全一致"
+    - "更新 index.html 中的 modal 元素 ID 和容器 ID，与 weaponUI.js 的修改保持同步"
+    - "更新 style.css 中的 CSS 类名，采用 BEM 命名规范"
+  
+  next_round_focus:
+    - "修复 6 个 warning 级别问题（FND-SPEC-008 ~ FND-SPEC-013），提升代码与 L2 设计模式的一致性"
+    - "考虑实现 2 个 info 级别建议（FND-SPEC-014 ~ FND-SPEC-015），提升数据完整性和迁移健壮性"
+  
+  testing_requirements:
+    - "验证 EventBus 事件发射后，游戏其他模块能正确接收和处理事件"
+    - "验证修改后的 HTML 元素 ID 和 CSS class 不会破坏现有的 UI 交互逻辑"
+    - "验证错误码修改后，错误处理流程仍然正确"
+
+conclusion: |
+  本次规范符合性审查发现 15 个问题，其中 7 个 blocking 级别问题必须在下一轮审查前修复。
+  主要问题集中在：
+  1. 前端 HTML 元素 ID 和 CSS class 命名与 L2 规范不一致（5 个 blocking）
+  2. 缺少 EventBus 事件发射，违反 L2 API 设计的事件契约（1 个 blocking）
+  3. 错误码使用错误（1 个 blocking）
+  4. 代码实现细节与 L2 设计模式存在偏差（6 个 warning）
+  
+  修复建议：
+  - 优先修复 blocking 问题，确保与 L2 规范的强制性要求一致
+  - 逐步修复 warning 问题，提升代码质量和设计一致性
+  - info 级别问题可在后续迭代中优化
+  
+  审查状态：FAIL（需要修复后重新审查）

@@ -1,0 +1,158 @@
+---
+# L3 实施阶段交付报告
+# 变更：mobile-warrior-system
+# 生成者：L3 Coordinator
+
+meta:
+  change_name: mobile-warrior-system
+  phase: L3_complete
+  delivery_date: "2026-04-02"
+  overall_verdict: PASS
+  implementer_units: 1
+  review_rounds: 1
+  fix_rounds: 1
+
+# ──────────────────────────────────────────────
+# 实现单元列表
+# ──────────────────────────────────────────────
+implementer_units:
+  - id: IMPL-UNIT-PLAYER
+    domain: PLAYER
+    status: complete
+    implementer_file: game.js
+    traceability_map: l3-state/traceability-PLAYER.json
+    changes_doc: l3-state/changes-PLAYER.md
+
+# ──────────────────────────────────────────────
+# 交付物清单
+# ──────────────────────────────────────────────
+deliverables:
+
+  - category: 业务代码
+    items:
+      - file: game.js
+        type: modified
+        description: "新增 updatePlayerPosition() 函数、keys 状态对象、keydown/keyup 监听；gameLoop 中调用 updatePlayerPosition()"
+        key_changes:
+          - "line 99: player.speed = 5 属性"
+          - "line 112: keys 状态对象"
+          - "lines 1031-1038: keydown 监听（ArrowLeft/ArrowRight）"
+          - "lines 1040-1047: keyup 监听"
+          - "lines 1063-1107: updatePlayerPosition() 函数"
+          - "line 1175: gameLoop 中 updatePlayerPosition() 调用"
+        fix_round_changes:
+          - "FND-CODE-001: NaN 守卫移至双键检测之前（lines 1079-1089 重排）"
+          - "FND-CODE-002: player.speed || 5 → player.speed ?? 5（line 1092）"
+          - "FND-CODE-003: leftBound 变量名后多余空格移除（line 1104）"
+
+  - category: L0 需求文档（修正）
+    items:
+      - file: hhspec/changes/mobile-warrior-system/specs/requirements/PLAYER/player-movement.md
+        type: modified
+        description: "修正 §1.2、§6.3 状态矩阵、BS-005、BS-011，使其与 DD-004 设计决策和代码实现保持一致"
+        fix_round_changes:
+          - "FND-FUNC-001 Option A: §6.3 波次间隔行从「可移动=是」更新为「否」"
+          - "§6.3 波次结算弹窗行从「待确认」更新为「否（Q-004 已决策）」"
+          - "§1.2 目标用户描述更新，说明波次间隔期移动限制"
+          - "BS-005 预期行为更新，添加 waveActive 状态条件说明"
+          - "BS-011 预期行为从「待确认」更新为「已决策：禁止移动」"
+
+  - category: 可追溯性文档
+    items:
+      - file: hhspec/changes/mobile-warrior-system/l3-state/traceability-PLAYER.json
+        type: created
+        description: "12 个约束的完整 Traceability Map（REQ-PLAYER-001~011 + BS-007 + BS-009）"
+        constraint_coverage: "12/12 (100%)"
+
+      - file: hhspec/changes/mobile-warrior-system/l3-state/changes-PLAYER.md
+        type: created
+        description: "变更清单，列出所有新增/修改的代码位置"
+
+  - category: 审查报告
+    items:
+      - file: hhspec/changes/mobile-warrior-system/reviews/l3-func-review.yml
+        type: created
+        verdict: "FAIL → PASS（修复后）"
+        source: l3_functional_reviewer
+
+      - file: hhspec/changes/mobile-warrior-system/reviews/l3-code-review.yml
+        type: created
+        verdict: "FAIL → PASS（修复后）"
+        source: l3_code_reviewer
+
+      - file: hhspec/changes/mobile-warrior-system/reviews/l3-security-review.yml
+        type: created
+        verdict: PASS
+        source: l3_security_reviewer
+
+      - file: hhspec/changes/mobile-warrior-system/reviews/l3-perf-review.yml
+        type: created
+        verdict: PASS
+        source: l3_performance_reviewer
+
+      - file: hhspec/changes/mobile-warrior-system/reviews/l3-consolidated-report.yml
+        type: created
+        verdict: PASS_WITH_FIXES
+        source: L3 Coordinator
+
+# ──────────────────────────────────────────────
+# 门禁结果（L3_gate）
+# ──────────────────────────────────────────────
+gate_results:
+  lint: N/A  # 纯 JS 静态项目，无 ESLint 配置
+  type_check: N/A  # 无 TypeScript，无类型检查
+  build: N/A  # 静态 HTML 页面，无构建步骤（直接 open index.html）
+  format_check: N/A
+  verdict: PASS  # 静态项目无门禁障碍
+
+# ──────────────────────────────────────────────
+# 测试结果（L3_test）
+# ──────────────────────────────────────────────
+test_results:
+  test_engineer_executed: false
+  reason: "L3 Test Engineer 在本轮未激活（FND-FUNC-002 warning：无测试执行报告）"
+  functional_coverage_by_review: |
+    l3_functional_reviewer 独立验证：
+      - 12/12 Gherkin Scenarios 代码级验证 PASS
+      - 11/11 适用边界场景代码级验证 PASS（BS-012 N/A）
+      - 12/12 L0 约束 Traceability Map 交叉验证 PASS
+
+# ──────────────────────────────────────────────
+# 新增依赖声明
+# ──────────────────────────────────────────────
+new_dependencies: []  # 无新增依赖
+
+# ──────────────────────────────────────────────
+# DB Migration
+# ──────────────────────────────────────────────
+db_migrations: []  # 纯前端 Canvas 游戏，无数据库
+
+# ──────────────────────────────────────────────
+# 配置变更
+# ──────────────────────────────────────────────
+config_changes: []  # 无配置变更
+
+# ──────────────────────────────────────────────
+# 最终结论
+# ──────────────────────────────────────────────
+conclusion:
+  verdict: PASS
+  summary: |
+    L3 实现阶段完成。
+
+    核心交付：
+      - updatePlayerPosition() 函数：42 行有效代码，O(1) 复杂度，平铺式守卫链
+      - 键盘事件监听：keys 状态对象轮询模式（消除 OS 键盘重复率影响）
+      - 边界钳制：基于 GAME_CONSTANTS.ROAD_WIDTH 推导，左 150/右 750
+      - NaN 防御、双键抵消、暂停/GameOver/弹窗期间守卫全部就绪
+
+    Round 1 审查发现 2 个 blocking 问题，均已在同轮修复：
+      - FND-FUNC-001（需求-代码对齐缺口）：更新 L0 §6.3 文档
+      - FND-CODE-001（NaN 守卫顺序错误）：重排执行顺序
+
+    已知限制：
+      - 无测试执行报告（FND-FUNC-002 warning）：功能由代码审查独立验证，可进入 L4 功能验收
+
+  escalated: false
+  next_phase: L4_verification
+---

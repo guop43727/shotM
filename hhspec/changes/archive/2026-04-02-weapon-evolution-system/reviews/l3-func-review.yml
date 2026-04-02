@@ -1,0 +1,525 @@
+---
+reviewer: l3_functional_reviewer
+reviewer_layer: compliance
+change_name: weapon-evolution-system
+review_round: 1
+timestamp: "2026-03-30T00:00:00Z"
+title: "功能完整性审查报告"
+verdict: FAIL
+
+# ============================================================
+# EXECUTIVE SUMMARY
+# ============================================================
+summary: |
+  功能审查发现 3 个 blocking 级别问题，阻止通过审查。核心问题：
+  1. Gherkin Scenario 1（首次收集武器）的"自动切换装备"步骤未实现
+  2. Gherkin Scenario 5（波次间武器切换）的完整流程未实现（缺少波次开始前的武器选择界面）
+  3. 边界场景"库存数量爆表"的 UI 显示逻辑未实现（999+ 显示）
+
+  已验证 7 个 Gherkin Scenario 中的 4 个完全实现，3 个部分实现或未实现。
+  15 个边界场景中 12 个已实现，3 个未实现或部分实现。
+
+# ============================================================
+# CONSTRAINT COVERAGE STATISTICS
+# ============================================================
+constraint_coverage:
+  total_l0_scenarios: 7
+  covered_scenarios: 4
+  partial_scenarios: 2
+  missing_scenarios: 1
+  total_boundary_cases: 15
+  covered_boundary_cases: 12
+  missing_boundary_cases: 3
+  coverage_percentage: "73%"
+
+# ============================================================
+# FINDINGS (按严重度分组)
+# ============================================================
+findings:
+  # -------------------- BLOCKING 级别 --------------------
+  - id: FND-FUNC-001
+    check_item: FUNC-01
+    category: gherkin_normal_path
+    severity: blocking
+    title: "Gherkin Scenario 1 - 自动切换装备步骤未实现"
+    description: |
+      L0 需求文档 Scenario 1（行 306-313）要求：
+      "When 玩家子弹击中一个机枪掉落箱
+       Then ... And 玩家当前装备应切换为机枪"
+
+      实际代码验证：
+      - weaponManager.js:174-186 addWeapon() 方法仅增加库存计数，未调用 equipWeapon()
+      - 缺少自动装备逻辑：击中掉落箱后应自动切换到新获得的武器
+
+      Traceability Map 验证：
+      - unit-WEAPON-001-traceability.json 未声明此约束的 impl_location
+      - 测试报告中无对应测试用例
+    evidence:
+      - type: code_location
+        file: weaponManager.js
+        lines: "174-186"
+        content: |
+          addWeapon(weaponType) {
+            if (!weaponEvolutionConfig[weaponType]) {
+              console.error('[BIZ-002] Unknown weapon type:', weaponType);
+              return;
+            }
+            this.inventory[weaponType] = (this.inventory[weaponType] || 0) + 1;
+            this.debouncedSave();
+            // 缺失：未调用 this.equipWeapon(weaponType)
+          }
+      - type: requirement_reference
+        file: weapon-evolution-requirements.md
+        lines: "306-313"
+        quote: "And 玩家当前装备应切换为机枪"
+    root_cause: case_a_impl_bug
+    impact: "玩家击中掉落箱后无法立即使用新武器，违反 L0 验收标准"
+    remediation: |
+      在 weaponManager.js addWeapon() 方法末尾添加：
+      ```javascript
+      // Auto-equip newly acquired weapon
+      this.equipWeapon(weaponType);
+      ```
+      或在掉落箱击中逻辑中调用 equipWeapon()。
+
+  - id: FND-FUNC-002
+    check_item: FUNC-01
+    category: gherkin_normal_path
+    severity: blocking
+    title: "Gherkin Scenario 5 - 波次间武器选择界面未实现"
+    description: |
+      L0 需求文档 Scenario 5（行 373-392）要求：
+      "When 玩家点击'开始波次'按钮
+       Then 系统应暂停游戏 And 显示武器选择界面"
+
+      实际代码验证：
+      - 搜索全部实现文件，未找到"开始波次"按钮的事件监听器
+      - weaponUI.js 仅实现了"武器管理"弹窗，未实现波次开始前的武器选择流程
+      - FR-WEP-005 要求的"波次开始前暂停游戏并显示武器选择界面"未实现
+
+      Traceability Map 验证：
+      - unit-WEAPON-002-traceability.json 声称 US-WEP-006 已实现
+        但实际仅实现了"战斗中无法打开武器管理"的校验（weaponUI.js:42-46）
+      - 缺少波次间主动弹出武器选择界面的逻辑
+    evidence:
+      - type: code_search
+        result: "未找到 'startWave' 或 '开始波次' 相关的武器选择触发逻辑"
+      - type: requirement_reference
+        file: weapon-evolution-requirements.md
+        lines: "373-392, 236-245"
+        quote: "波次开始前暂停游戏并显示武器选择界面"
+      - type: traceability_gap
+        file: unit-WEAPON-002-traceability.json
+        lines: "49-52"
+        issue: "US-WEP-006 声称已实现，但仅覆盖战斗中校验，未覆盖波次间主动弹出"
+    root_cause: case_b_design_gap
+    impact: "玩家无法在波次开始前选择武器，核心游戏流程缺失"
+    remediation: |
+      需要在游戏主循环中添加波次间武器选择逻辑：
+      1. 在 game.js 中监听波次结束事件
+      2. 波次结束后调用 weaponUI.openWeaponSelectModal()
+      3. 玩家选择武器后关闭弹窗并开始新波次
+      或者：在"开始波次"按钮点击时触发武器选择界面。
+
+  - id: FND-FUNC-003
+    check_item: FUNC-03
+    category: boundary_scenario
+    severity: blocking
+    title: "边界场景 - 库存数量爆表的 UI 显示未实现"
+    description: |
+      L0 需求文档边界场景清单（行 439）要求：
+      "库存数量爆表 | 某武器数量超过999 | 正常累加，UI显示999+"
+
+      实际代码验证：
+      - weaponUI.js:172 _buildWeaponCard() 直接显示 `x${weapon.count}`
+      - 未实现 999+ 的截断显示逻辑
+      - StorageAdapter.validateInventory() 限制最大值为 999999，但 UI 未处理大数字显示
+    evidence:
+      - type: code_location
+        file: weaponUI.js
+        lines: "231"
+        content: "<div class=\"weapon-count\">x${weapon.count}</div>"
+      - type: requirement_reference
+        file: weapon-evolution-requirements.md
+        lines: "439"
+        quote: "UI显示999+"
+    root_cause: case_a_impl_bug
+    impact: "大数字显示可能破坏 UI 布局，用户体验不佳"
+    remediation: |
+      在 weaponUI.js _buildWeaponCard() 中修改：
+      ```javascript
+      const displayCount = weapon.count > 999 ? '999+' : weapon.count;
+      <div class="weapon-count">x${displayCount}</div>
+      ```
+
+  # -------------------- WARNING 级别 --------------------
+  - id: FND-FUNC-004
+    check_item: FUNC-02
+    category: gherkin_error_path
+    severity: warning
+    title: "Gherkin Scenario 3 - 提示文案与需求不完全一致"
+    description: |
+      L0 需求文档 Scenario 3（行 348）要求显示：
+      "需要3个Shotgun才能合成"
+
+      实际代码 weaponManager.js:204 返回：
+      "材料不足: 需要3个${config.name}，当前拥有${count}个"
+
+      虽然语义正确，但文案格式与需求不完全一致。
+    evidence:
+      - type: code_location
+        file: weaponManager.js
+        lines: "204"
+      - type: requirement_reference
+        file: weapon-evolution-requirements.md
+        lines: "348"
+    root_cause: case_a_impl_bug
+    impact: "文案不一致，但不影响功能"
+    remediation: "统一错误提示文案格式，或在 L0 需求中明确允许更详细的提示"
+
+  - id: FND-FUNC-005
+    check_item: FUNC-03
+    category: boundary_scenario
+    severity: warning
+    title: "边界场景 - 连续快速点击合成的防抖处理不完整"
+    description: |
+      L0 需求文档边界场景（行 449）要求：
+      "连续快速点击合成 | 防抖处理 | 合成中禁用按钮，完成后恢复"
+
+      实际代码验证：
+      - weaponUI.js:811-819 在合成开始时禁用按钮（isMerging = true）
+      - 但如果用户在 1.5s 动画期间快速切换标签页再回来，状态可能不一致
+      - 缺少全局锁机制防止并发合成
+    evidence:
+      - type: code_location
+        file: weaponUI.js
+        lines: "811-819"
+      - type: requirement_reference
+        file: weapon-evolution-requirements.md
+        lines: "449"
+    root_cause: case_a_impl_bug
+    impact: "极端情况下可能触发并发合成，但概率较低"
+    remediation: "在 weaponManager 层面添加全局合成锁，或在 UI 层面禁用整个合成标签页"
+
+  - id: FND-FUNC-006
+    check_item: FUNC-03
+    category: boundary_scenario
+    severity: warning
+    title: "边界场景 - 进化树循环依赖校验未实现"
+    description: |
+      L0 需求文档边界场景（行 462）要求：
+      "进化树循环依赖 | 数据配置错误 | 启动时校验，发现错误抛出异常"
+
+      实际代码验证：
+      - weaponManager.js 未实现启动时的进化树拓扑校验
+      - 如果 weaponEvolutionConfig 配置错误（如 rifle.nextTier = 'rifle++'，rifle++.nextTier = 'rifle'）
+        系统不会检测到循环依赖
+    evidence:
+      - type: code_search
+        result: "未找到进化树拓扑校验逻辑"
+      - type: requirement_reference
+        file: weapon-evolution-requirements.md
+        lines: "462"
+    root_cause: case_a_impl_bug
+    impact: "配置错误可能导致运行时无限循环，但当前配置正确"
+    remediation: |
+      在 weaponManager.js 初始化时添加：
+      ```javascript
+      function validateEvolutionTree() {
+        const visited = new Set();
+        for (const id in weaponEvolutionConfig) {
+          let current = id;
+          const path = [];
+          while (current && !visited.has(current)) {
+            if (path.includes(current)) {
+              throw new Error(`Evolution tree cycle detected: ${path.join(' -> ')} -> ${current}`);
+            }
+            path.push(current);
+            current = weaponEvolutionConfig[current]?.nextTier;
+          }
+          path.forEach(p => visited.add(p));
+        }
+      }
+      validateEvolutionTree();
+      ```
+
+# ============================================================
+# CHECK ITEMS DETAILED RESULTS
+# ============================================================
+check_items:
+  - id: FUNC-01
+    name: "L0 Gherkin 正常路径覆盖"
+    status: FAIL
+    passed: 4
+    failed: 3
+    details: |
+      ✅ Scenario 2: 武器合成成功 - 完全实现
+      ✅ Scenario 3: 材料不足无法合成 - 完全实现（文案略有差异，见 FND-FUNC-004）
+      ✅ Scenario 4: 终极武器融合 - 完全实现
+      ✅ Scenario 6: 战斗中无法切换武器 - 完全实现
+      ❌ Scenario 1: 首次收集武器 - 缺少自动装备步骤（FND-FUNC-001）
+      ❌ Scenario 5: 波次间武器切换 - 缺少波次开始前的武器选择界面（FND-FUNC-002）
+      ✅ Scenario 7: 进化树可视化 - 完全实现
+
+  - id: FUNC-02
+    name: "L0 Gherkin 异常路径覆盖"
+    status: PASS
+    passed: 5
+    failed: 0
+    details: |
+      ✅ BIZ-002: 材料不足 - weaponManager.js:202-205
+      ✅ BIZ-003: 无法合成装备武器 - weaponManager.js:208-210
+      ✅ BIZ-004: 最高级武器无法合成 - weaponManager.js:197-199
+      ✅ BIZ-005: 终极融合材料不足 - weaponManager.js:332-334
+      ✅ 战斗中无法打开武器管理 - weaponUI.js:43-46
+
+  - id: FUNC-03
+    name: "边界场景全覆盖"
+    status: FAIL
+    passed: 12
+    failed: 3
+    details: |
+      数据边界（4/4）：
+      ✅ 库存为空 - StorageAdapter.getDefaultInventory() 返回 {rifle: 1}
+      ✅ 库存数量爆表（存储层） - validateInventory() 限制 0-999999
+      ❌ 库存数量爆表（UI层） - 缺少 999+ 显示逻辑（FND-FUNC-003）
+      ✅ localStorage满 - StorageAdapter.save() 降级到 sessionStorage
+      ✅ localStorage损坏 - StorageAdapter.load() 自动重置
+
+      操作边界（3/4）：
+      ⚠️  连续快速点击合成 - 部分实现，缺少全局锁（FND-FUNC-005）
+      ✅ 同时合成多个武器 - synthesisTabState.isMerging 串行化
+      ✅ 切换武器后立即关闭弹窗 - equipWeapon() 立即生效
+      ✅ 战斗中库存变化 - addWeapon() 实时更新库存
+
+      特殊情况（3/4）：
+      ✅ 融合终极武器后再次融合 - 允许，无限制
+      ✅ 装备的武器被合成消耗 - mergeWeapons() 检查 player.weapon.id
+      ⚠️  进化树循环依赖 - 未实现启动校验（FND-FUNC-006）
+      ✅ 未知武器类型 - addWeapon/mergeWeapons 校验 weaponEvolutionConfig
+
+  - id: FUNC-04
+    name: "Traceability Map L0 覆盖"
+    status: PASS
+    passed: 15
+    failed: 0
+    details: |
+      WEAPON-001 traceability: 15/15 约束已实现且代码位置真实存在
+      - FR-WEP-001: localStorage persistence ✅
+      - FR-WEP-002: 3:1 synthesis ✅
+      - FR-WEP-003: Evolution tree ✅
+      - FR-WEP-004: Ultimate fusion ✅
+      - BIZ-002/003/004/005: Error codes ✅
+      - STOR-001: Storage quota ✅
+      - DATA-002: Data validation ✅
+      - V-001: Validation rule ✅
+      - NFR-WEP-002: sessionStorage fallback ✅
+
+  - id: FUNC-05
+    name: "Traceability Map L1 覆盖"
+    status: PASS
+    passed: 38
+    failed: 0
+    details: |
+      WEAPON-002 traceability: 38/38 约束已实现
+      - US-WEP-006/007/008/009: User stories ✅
+      - COMP-001/002/003/004/005: Components ✅
+      - EH-001~023: Event handlers ✅
+      - RL-001: Render logic ✅
+      - STORE-001: State management ✅
+      - INF-FE-001/002/006/007: Interaction ✅
+
+  - id: FUNC-06
+    name: "验收策略达标"
+    status: PASS
+    passed: 1
+    failed: 0
+    details: |
+      L0 需求文档未明确定义独立的 acceptance_strategy 章节。
+      基于 Gherkin Scenario 和边界场景清单的验证结果，
+      核心验收策略（合成、融合、持久化、UI交互）已基本达标。
+
+  - id: FUNC-07
+    name: "功能逻辑正确性"
+    status: PASS
+    passed: 1
+    failed: 0
+    details: |
+      业务逻辑语义与 L0 需求一致：
+      ✅ 3:1 合成比例正确（mergeWeapons 消耗3个，产出1个）
+      ✅ 终极融合逻辑正确（消耗3个Super，产出1个Ultimate）
+      ✅ 进化树路径正确（13种武器，3条路径+1个终极）
+      ✅ 原子化事务正确（snapshot + rollback）
+      ✅ 库存持久化正确（localStorage + sessionStorage fallback）
+
+  - id: FUNC-08
+    name: "测试结果与功能对应"
+    status: PASS
+    passed: 17
+    failed: 0
+    details: |
+      Test Engineer 报告显示 17/17 测试通过，覆盖：
+      ✅ 核心业务逻辑（getInventory, addWeapon, mergeWeapons, fuseUltimateWeapon）
+      ✅ 错误处理（BIZ-002/003/004/005, STOR-001, TXN-004）
+      ✅ 数据持久化（saveInventory, loadInventory）
+      ✅ 数据验证（weaponType validation）
+
+      注意：测试覆盖 weaponManager.js，但未覆盖 weaponUI.js 的交互逻辑。
+      Gherkin Scenario 1 和 5 的缺失功能未被测试发现。
+
+# ============================================================
+# FINDINGS BY CATEGORY
+# ============================================================
+findings_by_category:
+  gherkin_normal_path:
+    total: 2
+    blocking: 2
+    warning: 0
+    info: 0
+  gherkin_error_path:
+    total: 1
+    blocking: 0
+    warning: 1
+    info: 0
+  boundary_scenario:
+    total: 3
+    blocking: 1
+    warning: 2
+    info: 0
+  traceability_l0:
+    total: 0
+    blocking: 0
+    warning: 0
+    info: 0
+  traceability_l1:
+    total: 0
+    blocking: 0
+    warning: 0
+    info: 0
+  logic_correctness:
+    total: 0
+    blocking: 0
+    warning: 0
+    info: 0
+
+# ============================================================
+# TRACEABILITY CROSS-VERIFICATION
+# ============================================================
+traceability_verification:
+  unit_weapon_001:
+    file: "unit-WEAPON-001-traceability.json"
+    total_constraints: 15
+    verified_constraints: 15
+    discrepancies: 0
+    notes: "全部约束的 impl_location 已交叉验证代码真实存在"
+
+  unit_weapon_002:
+    file: "unit-WEAPON-002-traceability.json"
+    total_constraints: 38
+    verified_constraints: 38
+    discrepancies: 1
+    notes: |
+      US-WEP-006 声称已实现，但仅覆盖"战斗中无法打开武器管理"的校验，
+      未覆盖"波次开始前主动弹出武器选择界面"的核心流程。
+      这是 Traceability Map 的覆盖度声明与实际功能的不一致。
+
+# ============================================================
+# TEST REPORT CROSS-REFERENCE
+# ============================================================
+test_report_analysis:
+  test_file: "test-execution-report.md"
+  total_tests: 17
+  passed_tests: 17
+  failed_tests: 0
+  coverage_gaps: |
+    测试报告仅覆盖 weaponManager.js 的单元测试，未覆盖：
+    1. weaponUI.js 的 UI 交互逻辑
+    2. Gherkin Scenario 的端到端验证
+    3. 波次间武器选择流程的集成测试
+
+    建议补充集成测试验证完整的用户流程。
+
+# ============================================================
+# REMEDIATION PLAN
+# ============================================================
+remediation_plan:
+  blocking_issues: 3
+  estimated_effort: "4-6 hours"
+  priority_order:
+    - issue_id: FND-FUNC-002
+      priority: P0
+      effort: "3-4 hours"
+      reason: "核心游戏流程缺失，影响用户体验"
+
+    - issue_id: FND-FUNC-001
+      priority: P0
+      effort: "0.5 hour"
+      reason: "简单修复，但影响用户体验"
+
+    - issue_id: FND-FUNC-003
+      priority: P1
+      effort: "0.5 hour"
+      reason: "边界场景，影响较小但需修复"
+
+# ============================================================
+# REVIEWER NOTES
+# ============================================================
+reviewer_notes: |
+  审查方法论：
+  1. 逐条提取 L0 需求文档中的 7 个 Gherkin Scenario
+  2. 对每个 Scenario 的 Given/When/Then 步骤，在代码中查找对应实现
+  3. 交叉验证 Traceability Map 中声明的 impl_location 是否真实存在
+  4. 对 15 个边界场景逐条核对代码实现
+  5. 比对 Test Engineer 报告中的测试覆盖度
+
+  证据优先原则：
+  - 每个 FAIL 判定都附带代码位置和需求引用
+  - 未仅依赖 Traceability Map 的 status 字段，全部打开代码文件验证
+  - 测试通过不等于功能完整，独立核对 L0 验收标准
+
+  发现的主要问题：
+  - 实现者在 Traceability Map 中声称 US-WEP-006 已实现，但实际仅实现了部分功能
+  - 缺少端到端的集成测试验证完整用户流程
+  - weaponUI.js 的交互逻辑未被测试覆盖
+
+# ============================================================
+# SELF-CHECK CONFIRMATION
+# ============================================================
+self_check:
+  general_checklist:
+    - item: "全部 8 个检查项（FUNC-01 ~ FUNC-08）均已逐条审查"
+      status: true
+    - item: "每个 PASS 检查项有判定依据"
+      status: true
+    - item: "每个 FAIL 检查项有完整的问题记录"
+      status: true
+    - item: "审查报告 YAML 结构完整，无遗漏字段"
+      status: true
+    - item: "全部 Implementer 的代码和 Traceability Map 已完整阅读"
+      status: true
+
+  role_specific_checklist:
+    - item: "全部 L0 Gherkin Scenario（7个）已逐个核对"
+      status: true
+    - item: "全部 L0 边界场景清单（15个）已逐条核对"
+      status: true
+    - item: "全部 L0-AC-* 约束 ID 的 Traceability Map impl_location 已交叉验证代码"
+      status: true
+    - item: "功能核对表中无遗漏项"
+      status: true
+    - item: "未仅依赖 Traceability Map 的 status 字段判定通过"
+      status: true
+
+# ============================================================
+# APPROVAL GATE
+# ============================================================
+approval_gate:
+  can_proceed_to_next_phase: false
+  blocking_issues_count: 3
+  required_actions:
+    - "修复 FND-FUNC-001: 实现击中掉落箱后自动装备武器"
+    - "修复 FND-FUNC-002: 实现波次开始前的武器选择界面"
+    - "修复 FND-FUNC-003: 实现库存数量 999+ 的 UI 显示"
+  next_review_round: 2
+
+---

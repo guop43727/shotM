@@ -1,0 +1,499 @@
+---
+reviewer: l3_code_reviewer
+reviewer_layer: craft
+dimension: code_quality
+change_name: weapon-evolution-system
+review_round: 1
+timestamp: "2026-03-30T00:00:00Z"
+verdict: FAIL
+
+summary: >
+  代码质量审查发现 4 个 blocking 级别问题和 7 个 warning 级别问题、2 个 info 级别问题。
+  主要��陷：equipWeapon() 丢失库存所有权检查、StorageAdapter.validateInventory() 直接修改传入对象
+  违反不可性原则、错误处理中存在多处吞没异常（仅 console.error/warn 未向调用者传播错误）、
+  _renderEvolutionTreeCanvas() 函数超出 50 行阈值且职责过重。
+  必须修复全部 blocking 问题后方可通过审查。
+
+findings:
+
+  # ========== BLOCKING ==========
+
+  - id: FND-CODE-001
+    category: logic_error
+    check_item: CODE-01
+    severity: blocking
+    root_cause: case_a_impl_bug
+    title: "equipWeapon() 缺少库存所有权检查，允许装备库存为零的武器"
+    description: >
+      weaponManager.js equipWeapon() 方法（lines 237-261）验证 weaponType 是否在
+      weaponEvolutionConfig 中存在后，直接对 player.weapon 赋值，但未检查
+      this.inventory[weaponType] 是否大于零。触发条件：调用方传入一个合法 weaponType
+      但该武器在库存中数量为 0 时（例如 weaponUI._showWeaponDetails 渲染了所有 weaponConfig 中的
+      武器，用户点击"装备"按钮）。此时玩家实际装备了一件未拥有的武器，破坏游戏规则。
+      对照 Traceability Map unit-WEAPON-001 中 V-003 约束（"Check ownership"）已声明为 implemented，
+      但代码中仅有对应的 console.error 日志而缺少实际���截逻辑。
+    evidence:
+      file: weaponManager.js
+      lines: "237-261"
+      code_snippet: |
+        equipWeapon(weaponType) {
+          const config = weaponEvolutionConfig[weaponType];
+          if (!config) {
+            console.error('[DATA-004] Unknown weapon type:', weaponType);
+            return;  // 只有类型检查，无所有权检查
+          }
+          // ← 此处应有：if ((this.inventory[weaponType] || 0) === 0) { return; }
+          if (typeof player !== 'undefined' && player.weapon) {
+            player.weapon.id = config.id;
+            ...
+          }
+        }
+    trigger_condition: "weaponUI._showWeaponDetails() 渲染所有武器的"装备"按钮（line 313），
+      点击 count 为 0 的武器的"装备"按钮时 equipWeapon() 不拦截。"
+    remediation: >
+      在 config 检查之后、对 player.weapon 赋值之前，添加库存所有权检查：
+        if ((this.inventory[weaponType] || 0) === 0) {
+          console.error('[BIZ-006] Weapon not owned:', weaponType);
+          return;
+        }
+
+  - id: FND-CODE-002
+    category: immutability_violation
+    check_item: CODE-01
+    severity: blocking
+    root_cause: case_a_impl_bug
+    title: "StorageAdapter.validateInventory() 直接修改传入对象，违反不可变性原则"
+    description: >
+      weaponManager.js StorageAdapter.validateInventory()（lines 118-137）在
+      验证 inventory 合法性时，对传入对象 inventory 直接赋值（lines 124-133），
+      包括：inventory.rifle = 1（line 125）以及 inventory[weaponId] = Math.max(...)（line 132）。
+      这意味着调用方传入的对象在校验后会被静默修改，调用方无法感知数据被改变，
+      引发隐藏的副作用。触发条件：任何以 getDefaultInventory() 之外的途径调用
+      validateInventory(data) 时，原始 data 对象被原地修改。
+    evidence:
+      file: weaponManager.js
+      lines: "118-137"
+      code_snippet: |
+        validateInventory(inventory) {
+          if (typeof inventory !== 'object' || ...) { return false; }
+          if (!inventory.rifle || inventory.rifle < 1) {
+            inventory.rifle = 1;  // ← 直接修改传入对象
+          }
+          for (const weaponId in inventory) {
+            const count = inventory[weaponId];
+            if (typeof count !== 'number' || ...) {
+              inventory[weaponId] = Math.max(0, ...);  // ← 直接修改传入对象
+            }
+          }
+          return true;
+        }
+    trigger_condition: "调用 validateInventory(data) 时，data.rifle 不存在或 data[x] 为
+      负数/字符串，导致传入的 data 被静默修改，调用方看到已被变异的对象。"
+    remediation: >
+      将验证逻辑改为返回净化后的副本而非修改原始对象：
+        validateInventory(inventory) {
+          if (typeof inventory !== 'object' || ...) { return null; }
+          const cleaned = { ...inventory };
+          if (!cleaned.rifle || cleaned.rifle < 1) cleaned.rifle = 1;
+          for (const id in cleaned) {
+            const count = cleaned[id];
+            if (typeof count !== 'number' || ...) {
+              cleaned[id] = Math.max(0, Math.min(999999, Math.floor(count || 0)));
+            }
+          }
+          return cleaned;
+        }
+      同时更新调用方 StorageAdapter.load()（line 104）接收返回值。
+
+  - id: FND-CODE-003
+    category: error_handling
+    check_item: CODE-05
+    severity: blocking
+    root_cause: case_a_impl_bug
+    title: "addWeapon() 验证失败时静默 return，调用方无法感知错误"
+    description: >
+      weaponManager.js addWeapon()（lines 173-186）：当 weaponType 不在
+      weaponEvolutionConfig 中时，仅打印 console.error 后 return，无任何返回值。
+      调用方（如游戏逻辑中收集到武器掉落后调用 weaponManager.addWeapon(type)）无法
+      区分"成功添加"和"静默失败"，导致无效武器被认为成功入库而继续后续逻辑
+      （例如触发合成检查、UI 更新等）。这属于吞没异常的具体形态（错误被 console 吸收，
+      调用方只能通过返回值来判断，而返回值是 undefined）。
+    evidence:
+      file: weaponManager.js
+      lines: "173-186"
+      code_snippet: |
+        addWeapon(weaponType) {
+          if (!weaponEvolutionConfig[weaponType]) {
+            console.error('[BIZ-002] Unknown weapon type:', weaponType);
+            return;  // ← 返回 undefined；��用方无法判断是否成功
+          }
+          this.inventory[weaponType] = (this.inventory[weaponType] || 0) + 1;
+          this.debouncedSave();
+        }
+    trigger_condition: "调用 addWeapon('unknown_type') 时返回 undefined，
+      若调用方代码为 if (weaponManager.addWeapon(type)) { ... }，则此检查始终失败；
+      但若调用方不做返回值检查则静默失败。"
+    remediation: >
+      方案 A（抛出错误，让调用方决定处理）：
+        throw new Error('[BIZ-002] Unknown weapon type: ' + weaponType);
+      方案 B（返回结果对象，与 mergeWeapons 风格一致）：
+        return { success: false, error: 'BIZ-002', message: '未知武器类型: ' + weaponType };
+      同时在成功路径 return { success: true }。
+
+  - id: FND-CODE-004
+    category: error_handling
+    check_item: CODE-05
+    severity: blocking
+    root_cause: case_a_impl_bug
+    title: "equipWeapon() 验证失败时静默 return undefined，调用方无法感知错误"
+    description: >
+      weaponManager.js equipWeapon()（lines 237-261）在两个验证分支（weaponType 无效、武器未拥有）
+      均使用 console.error + return（无返回值）。然而 weaponUI.js _showWeaponDetails()
+      line 324 调用 window.weaponManager.equipWeapon(weaponId) 后立即调用
+      this.closeWeaponModal()——无论装备是否成功，弹窗都会关闭。
+      玩家点击了未拥有的武器"装备"按钮时（仅 count > 0 才渲染该按钮，但理论上可能通过
+      武器状态变化产生竞态），弹窗仍然关闭，玩家得不到任何失败反馈。
+    evidence:
+      file: weaponUI.js
+      lines: "322-326"
+      code_snippet: |
+        if (equipBtn) {
+          equipBtn.addEventListener('click', () => {
+            window.weaponManager.equipWeapon(weaponId);  // 返回 undefined
+            this.closeWeaponModal();  // 不论成功与否，弹窗都关闭
+          });
+        }
+    trigger_condition: "weaponManager.equipWeapon() 返回 undefined 时，
+      weaponUI 无法判断是否成功，导致失败场景下玩家无任何反馈。"
+    remediation: >
+      修改 equipWeapon() 返回统一的结果对象（与 mergeWeapons 一致）：
+        return { success: true } 或 { success: false, error: '...', message: '...' }
+      修改 weaponUI._showWeaponDetails() 中的调用方代码：
+        const result = window.weaponManager.equipWeapon(weaponId);
+        if (result && result.success) {
+          this.closeWeaponModal();
+        } else {
+          this._showWarning(result ? result.message : '装备失败');
+        }
+
+  # ========== WARNING ==========
+
+  - id: FND-CODE-005
+    category: readability
+    check_item: CODE-03
+    severity: warning
+    title: "_renderEvolutionTreeCanvas() 函数超过 50 行有效代码，职责过重"
+    description: >
+      weaponUI.js _renderEvolutionTreeCanvas()（lines 398-476）共 78 行，包含清除画布、
+      变换矩阵、绘制连接线、绘制节点（循环）、绘制融合汇聚线、绘制终极节点、恢复状态
+      等多个独立步骤。每个步骤已有注释标注（STEP-01~07），但它们全部压缩在单一函数中，
+      使函数测试、调试和修改的认知成本偏高。
+    evidence:
+      file: weaponUI.js
+      lines: "398-476"
+      note: "函数体 78 行（超出 50 行阈值 56%）；内部有 2 层嵌套 forEach 循环"
+    recommendation: >
+      将 STEP-03/04（绘制路径 + 记录位置）提取为 _drawEvolutionPaths(ctx, treeData, startX, startY, ...)，
+      将 STEP-05/06（融合线 + 融合节点）提取为 _drawFusionSection(ctx, treeData, ...)。
+      主函数保留 save/restore/clear 和调度逻辑。
+
+  - id: FND-CODE-006
+    category: code_duplication
+    check_item: CODE-07
+    severity: warning
+    title: "三条进化路径配置在 getEvolutionTree() ���重复 3 次相同的 map() 逻辑"
+    description: >
+      weaponManager.js getEvolutionTree()（lines 287-325）对 rifle/machinegun/shotgun 三条路径
+      各自独立地调用结构完全相同的 .map(id => ({ id, tier, owned, count, canMerge })) 表达式
+      （lines 291-312），仅路径 ID 数组不同。相同的 map 回调函数体重复出现 3 次。
+      若将来需要在节点对象中添加新字段（如 locked 状态），需要同步修改 3 处。
+    evidence:
+      file: weaponManager.js
+      lines: "291-312"
+      code_snippet: |
+        ['rifle', 'rifle+', 'rifle++', 'super_rifle'].map(id => ({
+          id, tier: weaponEvolutionConfig[id].tier,
+          owned: (inv[id] || 0) > 0, count: inv[id] || 0,
+          canMerge: (inv[id] || 0) >= 3 && !!weaponEvolutionConfig[id].nextTier
+        })),
+        ['machinegun', ...].map(id => ({ /* 完全相同的表达式 */ })),
+        ['shotgun', ...].map(id => ({ /* 完全相同的表达式 */ }))
+    recommendation: >
+      提取映射回调为独立函数，例如：
+        const toNodeInfo = (id) => ({
+          id,
+          tier: weaponEvolutionConfig[id].tier,
+          owned: (inv[id] || 0) > 0,
+          count: inv[id] || 0,
+          canMerge: (inv[id] || 0) >= 3 && !!weaponEvolutionConfig[id].nextTier
+        });
+      然后 paths 使用：
+        WEAPON_PATHS.map(path => path.map(toNodeInfo))
+
+  - id: FND-CODE-007
+    category: code_duplication
+    check_item: CODE-07
+    severity: warning
+    title: "mergeWeapons() 和 fuseUltimateWeapon() 的事务快照/回滚模式重复实现"
+    description: >
+      weaponManager.js mergeWeapons()（lines 213-235）和 fuseUltimateWeapon()（lines 337-361）
+      均各自独立实现了相同的"创建快照 → try 操作 → catch 回滚"模式，包含相同的
+      snapshot、try/catch、this.inventory = snapshot、console.error 结构。
+      这两段代码除了操作内容不同，模板代码完全相同，属于代码重复（同一逻辑出现 2 次，
+      且未来如增加新的事务操作会继续复制）。
+    evidence:
+      file_1: weaponManager.js
+      lines_1: "213-235"
+      file_2: weaponManager.js
+      lines_2: "337-361"
+      note: "两处 try-catch 结构、snapshot 变量名和回滚逻辑一字不差"
+    recommendation: >
+      提取通用事务执行器：
+        _runTransaction(operation) {
+          const snapshot = { ...this.inventory };
+          try {
+            const result = operation();
+            const saveResult = this.saveInventory();
+            if (!saveResult) throw new Error('Save failed');
+            return result;
+          } catch (error) {
+            this.inventory = snapshot;
+            console.error('[TXN-004] Transaction failed, rolled back:', error);
+            return { success: false, error: 'TXN-004', message: '操作失败，已回滚' };
+          }
+        }
+
+  - id: FND-CODE-008
+    category: boundary_condition
+    check_item: CODE-02
+    severity: warning
+    title: "getEvolutionTree() 未检查 this.inventory 是否已初始化"
+    description: >
+      weaponManager.js getEvolutionTree()（lines 287-325）中第一行
+      const inv = this.inventory，但未检查 this.inventory 是否为 null。
+      WeaponManager.inventory 初始值为 null（line 156），
+      loadInventory() 在 WeaponManager 初始化时（line 388）同步调用，正常流程下 inventory 不为 null。
+      但若在模块加载完成前（如 addEventListener 立即触发 renderEvolutionTree）
+      就调用 getEvolutionTree()，inv 为 null，后续 (inv[id] || 0) 会抛出 TypeError。
+    evidence:
+      file: weaponManager.js
+      lines: "287-296"
+      code_snippet: |
+        getEvolutionTree() {
+          const inv = this.inventory;  // ← 可能为 null
+          // 首次使用 inv[id] 时抛出 TypeError: Cannot read property 'rifle' of null
+          ['rifle', ...].map(id => ({ owned: (inv[id] || 0) > 0, ... }))
+    trigger_condition: "模块加载时序问题或单元测试中未初始化 inventory 时调用 getEvolutionTree()。"
+    recommendation: >
+      在函数开头添加 guard：
+        getEvolutionTree() {
+          if (!this.inventory) this.loadInventory();
+          const inv = this.inventory;
+          ...
+        }
+      此模式已在 getInventory()（line 167-170）中正确实现，应保持一致。
+
+  - id: FND-CODE-009
+    category: boundary_condition
+    check_item: CODE-02
+    severity: warning
+    title: "fuseUltimateWeapon() 中直接修改 inv 局部变量（this.inventory 的引用）"
+    description: >
+      weaponManager.js fuseUltimateWeapon()（lines 327-361）：
+      第一行 const inv = this.inventory 将 this.inventory 赋值给 inv，
+      然后事务代码通过 inv.super_rifle -= 1（lines 341-346）直接操作——这与 mergeWeapons()
+      通过 this.inventory[weaponType] -= 3 直接操作一致，但不一致的是两者混用了
+      this.inventory 和 inv 引用。
+      更关键的是：回滚时 this.inventory = snapshot 会恢复 this.inventory 指向，
+      但 inv 仍指向旧的已修改对象，若其后代码还使用 inv 则会读到脏数据。
+      在当前代码路径中 inv 在 catch 之后不再被使用，但此模式极易在后续维护时引入
+      "回滚后继续读取 inv"的 bug。
+    evidence:
+      file: weaponManager.js
+      lines: "329-361"
+      code_snippet: |
+        fuseUltimateWeapon() {
+          const inv = this.inventory;      // inv 指向 this.inventory
+          ...
+          const snapshot = { ...this.inventory };  // 快照
+          try {
+            inv.super_rifle -= 1;          // 通过 inv 修改
+            ...
+            this.inventory = snapshot;     // 回滚：this.inventory 重新指向 snapshot
+            // 但 inv 仍指向旧的被修改对象
+          }
+        }
+    recommendation: >
+      统一使用 this.inventory 而不引入 inv 引用，避免回滚后 inv 与 this.inventory 不同步的风险：
+        fuseUltimateWeapon() {
+          if ((this.inventory.super_rifle || 0) < 1 || ...) { ... }
+          const snapshot = { ...this.inventory };
+          try {
+            this.inventory.super_rifle -= 1;
+            ...
+          } catch { this.inventory = snapshot; }
+        }
+
+  - id: FND-CODE-010
+    category: boundary_condition
+    check_item: CODE-02
+    severity: warning
+    title: "mousemove 坐标计算中 panOffset 修正方向错误（panOffset 未参与正确计算）"
+    description: >
+      weaponUI.js _attachTreeInteractionListeners()（lines 588-631）中鼠标坐标转换（lines 596-597）：
+        const mouseX = (e.clientX - rect.left) / this.evolutionTreeState.zoomLevel
+                        - this.evolutionTreeState.panOffset.x;
+        const mouseY = (e.clientY - rect.top) / this.evolutionTreeState.zoomLevel
+                        - this.evolutionTreeState.panOffset.y;
+      但 _renderEvolutionTreeCanvas()（lines 404-405）中应用变换的顺序是：
+        ctx.translate(panOffset.x, panOffset.y);  // 先平移
+        ctx.scale(zoomLevel, zoomLevel);           // 后缩放
+      在 Canvas 2D 中，translate + scale 的世界坐标与屏幕坐标的逆变换应为：
+        worldX = (screenX / zoom) - panX
+      但由于 translate 在 scale 之前，正确的逆变换为：
+        worldX = screenX / zoom - panX
+      当前减法写法在 translate 发生在 scale 之前时实际是正确的（先除以 zoom 后减 pan），
+      但若平移量很大时命中检测会出现偏移。需确认坐标系一致性。
+      注意：在 _rerenderTree()（line 581-585）中 panOffset 始终为 { x: 0, y: 0 }（无平移交互），
+      因此当前版本此问题不会显现，但为可维护性标记为 warning。
+    evidence:
+      file: weaponUI.js
+      lines: "596-597"
+      note: "canvas click handler（lines 623-624）存在相同的坐���计算，需同步检查"
+    recommendation: >
+      添加注释说明坐标变换的��学依据，并验证 pan 功能激活时的命中检测正确性。
+      如果 pan 功能未实现，可以简化坐标计算并添加 TODO 注释。
+
+  - id: FND-CODE-011
+    category: naming_quality
+    check_item: CODE-04
+    severity: warning
+    title: "addWeapon() 方法名与测试规范中约定的 addToInventory() 不一致"
+    description: >
+      Traceability Map unit-WEAPON-001-traceability.json 中 STEP-02 约束描述为
+      "addWeapon increments count and saves"，这与实现中方法名 addWeapon 匹配，
+      但测试文档（WEAPON-test-detail.md lines 63-64）中测试用例命名为
+      TC-UNIT-WEP-0003: addToInventory()添加新武器 和 TC-UNIT-WEP-0004: addToInventory()累加已有武器，
+      这些测试用例的 Act 代码使用 weaponManager.addToInventory('machinegun')。
+      方法名与测试骨架中的 API 约定不一致，会导致测试代码无法直接运行。
+    evidence:
+      file_1: weaponManager.js
+      lines_1: "173"
+      note_1: "实现：addWeapon(weaponType)"
+      file_2: "hhspec/changes/weapon-evolution-system/specs/design/WEAPON-test-detail.md"
+      lines_2: "299, 306"
+      note_2: "测试骨架期望：weaponManager.addToInventory('machinegun')"
+    recommendation: >
+      与设计方确认最终 API 命名，并在代码和测试骨架中统一使用同一方法名。
+      如选择 addWeapon，则更新测试文档；如选择 addToInventory，则更新实现方法名。
+
+  # ========== INFO ==========
+
+  - id: FND-CODE-012
+    category: style_consistency
+    check_item: CODE-08
+    severity: info
+    title: "_showUnlockRequirements() 使用 alert() 与项目通知风格不一致"
+    description: >
+      weaponUI.js _showUnlockRequirements()（line 681）使用 alert() 弹出原生对话框，
+      而同一文件中的 doFusion() 方法（lines 898-899）也使用 alert()，但其他错误提示（如
+      _showWarning()、statusDiv.textContent 等）使用的是自定义 UI 元素。
+      对照已有代码风格，项目中的 _showWarning() 方法（lines 909-918）提供了自定义通知组件，
+      alert() 的使用打破了视觉一致性（原生浏览器弹窗 vs 赛博朋克霓虹风格 UI）。
+    evidence:
+      file: weaponUI.js
+      lines: "681, 898-899"
+      note: "两处 alert() vs lines 909-918 中的自定义 _showWarning()"
+    recommendation: >
+      将 _showUnlockRequirements() 和 doFusion() 中的 alert() 替换为 this._showWarning() 调用，
+      或扩展 _showWarning() 支持多行内容展示。
+
+  - id: FND-CODE-013
+    category: style_consistency
+    check_item: CODE-08
+    severity: info
+    title: "StorageAdapter 中的 console.warn 与 WeaponManager 中 console.error 使用无一致规则"
+    description: >
+      项目代码中 console.warn 和 console.error 的使用缺乏明确规范：
+      StorageAdapter.save() 对 STOR-001（localStorage full）使用 console.warn（line 53），
+      而 WeaponManager.addWeapon() 对 BIZ-002（Unknown weapon type）使用 console.error（line 177）。
+      前者是业务预期的降级行为，后者是校验失败，但日志级别与严重程度的对应关系不一致。
+      注意：这属于对照已有代码风格发现的轻微不一致，不影响功能。
+    evidence:
+      file: weaponManager.js
+      lines: "53, 177"
+    recommendation: >
+      建立日志级别约定：console.warn 用于预期的降级/fallback 场景，
+      console.error 用于真正的异常情况，并在全部 console 调用处对照执行。
+
+# 按检查项汇总统计
+findings_by_category:
+  CODE-01_logic_error:
+    total: 2
+    blocking: 2
+    warning: 0
+    info: 0
+    items: [FND-CODE-001, FND-CODE-002]
+  CODE-02_boundary_condition:
+    total: 3
+    blocking: 0
+    warning: 3
+    info: 0
+    items: [FND-CODE-008, FND-CODE-009, FND-CODE-010]
+  CODE-03_readability:
+    total: 1
+    blocking: 0
+    warning: 1
+    info: 0
+    items: [FND-CODE-005]
+  CODE-04_naming_quality:
+    total: 1
+    blocking: 0
+    warning: 1
+    info: 0
+    items: [FND-CODE-011]
+  CODE-05_error_handling:
+    total: 2
+    blocking: 2
+    warning: 0
+    info: 0
+    items: [FND-CODE-003, FND-CODE-004]
+  CODE-06_resource_management:
+    total: 0
+    blocking: 0
+    warning: 0
+    info: 0
+    note: "无资源管理问题；localStorage/sessionStorage 无需手动释放，setTimeout 已在 debouncedSave 中正确清理"
+  CODE-07_code_duplication:
+    total: 2
+    blocking: 0
+    warning: 2
+    info: 0
+    items: [FND-CODE-006, FND-CODE-007]
+  CODE-08_style_consistency:
+    total: 2
+    blocking: 0
+    warning: 0
+    info: 2
+    items: [FND-CODE-012, FND-CODE-013]
+
+# 不确定性声明
+uncertainties:
+  - id: UNC-001
+    description: >
+      equipWeapon() 中通过全局 player 对象（typeof player !== 'undefined'）修改武器属性，
+      这种全局依赖在测试环境下需要注入 player 对象。在浏览器运行时行为无法静态确认，
+      若 player.weapon 为 undefined 而非 null，则 player.weapon.id 会抛出 TypeError。
+      已标注为 warning 级别风险点而非 blocking，因为 player.weapon 对象存在性依赖于游戏初始化顺序，
+      无法从代码中确认其始终存在。
+    file: weaponManager.js
+    lines: "253-260"
+
+  - id: UNC-002
+    description: >
+      canMerge() 中 player 装备检查（line 280）与 mergeWeapons() 中相同检查（line 208）逻辑一致，
+      但两者均直接访问全局 player 对象。如果 player 对象的 weapon.id 字段命名与
+      weaponEvolutionConfig 的 id 字段不一致（例如 player.weapon.type vs player.weapon.id），
+      则两处检查结果可能不同。无法仅从 weaponManager.js 静态确认 player.weapon 的具体结构。
+    file: weaponManager.js
+    lines: "208, 280"

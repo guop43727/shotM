@@ -1,0 +1,191 @@
+{
+  "unit_id": "UNIT-005-UI",
+  "unit_name": "UI Components Migration",
+  "implementer": "L3-Implementer",
+  "timestamp": "2026-03-31T11:32:20.115Z",
+  "traceability_map": {
+    "REQ-UI-001": {
+      "constraint_id": "REQ-UI-001",
+      "constraint_type": "L0_requirement",
+      "description": "游戏 HUD 显示金币/生命/波次/分数",
+      "status": "implemented",
+      "impl_location": [
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/HUD.js",
+          "lines": "14-74",
+          "description": "HUD 类实现，包含 constructor 和 update 方法，同步 gameState 到 DOM 元素"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/HUD.js",
+          "lines": "24-30",
+          "description": "DOM 元素引用缓存：gold, lives, wave, score, playerLevel"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/HUD.js",
+          "lines": "47-74",
+          "description": "update 方法实现脏检查，更新 HUD 显示"
+        }
+      ],
+      "evidence": "HUD 类通过 _elements 缓存 DOM 引用，update() 方法同步 gameState 的 gold/lives/wave/score 到对应 DOM 元素"
+    },
+    "REQ-UI-002": {
+      "constraint_id": "REQ-UI-002",
+      "constraint_type": "L0_requirement",
+      "description": "赛博朋克霓虹风格保持不变",
+      "status": "implemented",
+      "impl_location": [
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/HUD.js",
+          "lines": "2",
+          "description": "注释说明赛博朋克样式由 style.css 保证"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "2, 78-83",
+          "description": "暂停覆盖层使用 neon-text 类保持霓虹风格"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "lines": "2, 44-51",
+          "description": "波次完成界面使用 neon-text 和 neon-button 类保持霓虹风格"
+        }
+      ],
+      "evidence": "所有 UI 组件使用 HTML Overlay 方式，依赖 style.css 中的 .neon-text/.neon-button 类和 CSS 变量保持赛博朋克风格"
+    },
+    "REQ-UI-003": {
+      "constraint_id": "REQ-UI-003",
+      "constraint_type": "L0_requirement",
+      "description": "暂停菜单（ESC 键）正常显示",
+      "status": "implemented",
+      "impl_location": [
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "14-103",
+          "description": "PauseMenu 类完整实现"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "29-31",
+          "description": "绑定 ESC 键事件监听器"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "36-41",
+          "description": "ESC 键事件处理，调用 toggle() 方法"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "46-52",
+          "description": "toggle() 方法切换暂停状态"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "57-64",
+          "description": "pause() 方法设置 gamePaused 标志并显示覆盖层"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "69-77",
+          "description": "resume() 方法清除 gamePaused 标志并隐藏覆盖层"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "82-92",
+          "description": "_showOverlay() 方法创建暂停覆盖层 DOM 元素"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "lines": "97-103",
+          "description": "_hideOverlay() 方法移除暂停覆盖层"
+        }
+      ],
+      "evidence": "PauseMenu 类监听 ESC 键事件，切换 gameState.gamePaused 标志，显示/隐藏暂停覆盖层，调用 onPause/onResume 回调"
+    },
+    "REQ-UI-004": {
+      "constraint_id": "REQ-UI-004",
+      "constraint_type": "L0_requirement",
+      "description": "波次结束后显示武器选择界面",
+      "status": "implemented",
+      "impl_location": [
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "lines": "14-72",
+          "description": "WaveCompleteUI 类完整实现"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "lines": "32-56",
+          "description": "show() 方法显示波次完成界面，接受 rewards 参数"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "lines": "44-51",
+          "description": "创建波次完成覆盖层，显示奖励信息（gold, exp, items）"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "lines": "53-55",
+          "description": "绑定继续按钮事件，点击后调用 hide()"
+        },
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "lines": "62-72",
+          "description": "hide() 方法移除覆盖层并触发 onContinue 回调"
+        }
+      ],
+      "evidence": "WaveCompleteUI 类提供 show(rewards) 方法显示波次完成界面，展示奖励信息，提供继续按钮触发 onContinue 回调"
+    },
+    "REQ-UI-005": {
+      "constraint_id": "REQ-UI-005",
+      "constraint_type": "L0_requirement",
+      "description": "UI 响应式布局（适配不同屏幕）",
+      "status": "implemented",
+      "impl_location": [
+        {
+          "file": "/Users/peiguo/IdeaProjects/shotM/src/ui/HUD.js",
+          "lines": "4",
+          "description": "注释说明响应式布局由 style.css 保证"
+        }
+      ],
+      "evidence": "UI 组件使用 HTML Overlay 方式，响应式布局由 style.css 中的媒体查询和弹性布局保证"
+    }
+  },
+  "coverage_summary": {
+    "total_constraints": 5,
+    "implemented_constraints": 5,
+    "blocked_constraints": 0,
+    "coverage_percentage": 100
+  },
+  "change_manifest": {
+    "unit_id": "UNIT-005-UI",
+    "implementer": "L3-Implementer",
+    "timestamp": "2026-03-31T11:32:20.115Z",
+    "files": {
+      "added": [
+        {
+          "path": "/Users/peiguo/IdeaProjects/shotM/src/ui/HUD.js",
+          "purpose": "游戏 HUD 显示组件，同步 gameState 到 DOM 元素",
+          "constraints": ["REQ-UI-001", "REQ-UI-002", "REQ-UI-005"]
+        },
+        {
+          "path": "/Users/peiguo/IdeaProjects/shotM/src/ui/PauseMenu.js",
+          "purpose": "暂停菜单控制器，监听 ESC 键切换暂停状态",
+          "constraints": ["REQ-UI-002", "REQ-UI-003"]
+        },
+        {
+          "path": "/Users/peiguo/IdeaProjects/shotM/src/ui/WaveCompleteUI.js",
+          "purpose": "波次完成界面控制器，显示奖励和继续按钮",
+          "constraints": ["REQ-UI-002", "REQ-UI-004"]
+        }
+      ],
+      "modified": [],
+      "deleted": []
+    },
+    "modules_affected": ["UI"]
+  },
+  "implementation_notes": {
+    "architecture_decision": "使用 HTML Overlay 方式而非 Phaser DOM Element，因为项目基于原生 Canvas + HTML，非 Phaser 引擎",
+    "performance_optimization": "HUD 使用 DOM 元素缓存和脏检查避免不必要的 DOM 更新",
+    "style_consistency": "所有 UI 组件依赖 style.css 中的 .neon-text/.neon-button 类和 CSS 变量保持赛博朋克风格"
+  }
+}

@@ -36,6 +36,7 @@ const weaponWaveSelect = {
     const cfg = weaponConfig[type];
     player.weapon = {
       type,
+      id: type, // Add id field for consistency
       fireRate: cfg.fireRate,
       damage: cfg.damage,
       bulletCount: cfg.bulletCount,
@@ -47,6 +48,8 @@ const weaponWaveSelect = {
     const modal = document.getElementById('wave-select-modal');
     if (modal) modal.remove();
 
-    startWave();
+    // BLOCK-002: Start wave after weapon selection
+    game.waveActive = true;
+    spawnWave();
   }
 };

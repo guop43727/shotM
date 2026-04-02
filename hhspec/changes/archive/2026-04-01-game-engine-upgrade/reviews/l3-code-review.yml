@@ -1,0 +1,21 @@
+reviewer: l3_code_reviewer
+verdict: PASS
+blocking_count: 0
+warning_count: 0
+info_count: 3
+findings:
+  - id: CR-001
+    severity: info
+    file: src/ui/HUD.js
+    description: "getElementById without null check"
+    suggestion: "Use optional chaining"
+  - id: CR-002
+    severity: info
+    file: src/ui/WeaponUI.js
+    description: "getElementById without null check"
+    suggestion: "Use optional chaining"
+  - id: CR-003
+    severity: info
+    file: src/ui/WeaponWaveSelect.js
+    description: "getElementById without null check"
+    suggestion: "Use optional chaining"

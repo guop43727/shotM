@@ -1,0 +1,207 @@
+---
+# L3 综合审查报告（Consolidated Review Report）
+# 变更：mobile-warrior-system
+# 审查轮次：Round 1 + 修复
+# 生成者：L3 Coordinator
+
+meta:
+  change_name: mobile-warrior-system
+  review_round: 1
+  consolidation_date: "2026-04-02"
+  overall_verdict: PASS_WITH_FIXES
+  implementer_units: 1
+  total_findings: 11
+  blocking_before_fix: 2
+  blocking_after_fix: 0
+  warnings: 3
+  info: 6
+
+# ──────────────────────────────────────────────
+# 各审查者结果汇总
+# ──────────────────────────────────────────────
+reviewer_results:
+  - reviewer: l3_functional_reviewer
+    layer: compliance
+    verdict_original: FAIL
+    verdict_after_fix: PASS
+    blocking_count: 1
+    warning_count: 1
+    info_count: 1
+
+  - reviewer: l3_code_reviewer
+    layer: craft
+    verdict_original: FAIL
+    verdict_after_fix: PASS
+    blocking_count: 1
+    warning_count: 1
+    info_count: 1
+
+  - reviewer: l3_security_reviewer
+    layer: craft
+    verdict_original: PASS
+    verdict_after_fix: PASS
+    blocking_count: 0
+    warning_count: 1
+    info_count: 1
+
+  - reviewer: l3_performance_reviewer
+    layer: craft
+    verdict_original: PASS
+    verdict_after_fix: PASS
+    blocking_count: 0
+    warning_count: 0
+    info_count: 2
+
+# ──────────────────────────────────────────────
+# 去重后 Findings 总表
+# ──────────────────────────────────────────────
+findings:
+
+  # ─── Blocking (已修复) ────────────────────────────────────────────
+
+  - id: FND-FUNC-001
+    source: l3_functional_reviewer
+    severity: blocking
+    status: FIXED
+    title: "!game.waveActive 守卫与 L0 §6.3 状态矩阵冲突：波次间隔期间移动被错误阻止"
+    fix_applied: "Option A — 更新 L0 需求文档 §6.3 状态矩阵，将波次间隔行从「可移动=是」改为「可移动=否」；更新 §1.2、BS-005、BS-011 保持一致"
+    fix_location: "hhspec/changes/mobile-warrior-system/specs/requirements/PLAYER/player-movement.md"
+    code_location: "game.js:1075-1077（代码本身保持不变，已符合决策）"
+
+  - id: FND-CODE-001
+    source: l3_code_reviewer
+    severity: blocking
+    status: FIXED
+    title: "NaN 守卫置于双键检测之后，NaN 状态在双键同时按住时无法被恢复"
+    fix_applied: "将 NaN 守卫移至双键检测之前（game.js:1079-1084），确保所有执行路径均能捕获 NaN"
+    fix_location: "game.js:1079-1089（重排后）"
+
+  # ─── Warning ──────────────────────────────────────────────────────
+
+  - id: FND-CODE-002
+    source: l3_code_reviewer
+    severity: warning
+    status: FIXED
+    title: "player.speed || 5 将合法的 speed=0 误判为缺失值"
+    fix_applied: "改为 player.speed ?? 5（ES2020 nullish coalescing，仅对 null/undefined 使用默认值，保留 0 作为合法值）"
+    fix_location: "game.js:1092"
+
+  - id: FND-FUNC-002
+    source: l3_functional_reviewer
+    severity: warning
+    status: ACKNOWLEDGED
+    title: "无 Test Engineer 测试执行报告可供交叉验证"
+    notes: "L3 Test Engineer 未在本轮运行（无 test-execution-report）。功能审查已独立核对全部 12 个 Gherkin Scenario 和 11 个边界场景，不阻塞交付。"
+
+  - id: FND-SEC-001
+    source: l3_security_reviewer
+    severity: warning
+    status: ACKNOWLEDGED
+    title: "keys 对象为模块级全局变量，可通过浏览器控制台直接篡改（作弊向量）"
+    notes: "单机浏览器游戏固有架构特性，无远程攻击风险，无 PII 泄露，不阻塞交付。未来若引入在线排行榜需重新评估。"
+
+  # ─── Info ─────────────────────────────────────────────────────────
+
+  - id: FND-CODE-003
+    source: l3_code_reviewer
+    severity: info
+    status: FIXED
+    title: "变量声明对齐空格与项目风格微小差异"
+    fix_applied: "leftBound 后多余空格已移除"
+    fix_location: "game.js:1104"
+
+  - id: FND-FUNC-003
+    source: l3_functional_reviewer
+    severity: info
+    status: DEFERRED
+    title: "Traceability Map 行号引用微小偏差（Bullet 构造函数 line 774 未在 Map 中独立记录）"
+    notes: "逻辑正确，仅可追溯性略低。不影响功能判定，延迟至归档前修复。"
+
+  - id: FND-PERF-001
+    source: l3_performance_reviewer
+    severity: info
+    status: ACKNOWLEDGED
+    title: "canvas.width / 2 在同函数中计算两次"
+    notes: "开销 <<0.001ms/帧，不影响 REQ-PLAYER-010 性能预算（1ms）。无需修复。"
+
+  - id: FND-PERF-002
+    source: l3_performance_reviewer
+    severity: info
+    status: ACKNOWLEDGED
+    title: "键盘事件监听无 removeEventListener（当前架构不需要）"
+    notes: "单页面单实例游戏，监听器与页面同生命周期，正确行为。未来若添加 reinit 机制需补充 cleanup。"
+
+  - id: FND-SEC-002
+    source: l3_security_reviewer
+    severity: info
+    status: ACKNOWLEDGED
+    title: "createPauseOverlay() 使用 innerHTML 赋值静态字符串（无实际 XSS 风险）"
+    notes: "赋值内容为编译期静态字面量，无动态内容流入，无 XSS 风险。现有代码，非本次变更引入。"
+
+# ──────────────────────────────────────────────
+# 冲突仲裁记录
+# ──────────────────────────────────────────────
+conflict_arbitration:
+
+  - conflict_id: CONF-001
+    type: 需求-设计-代码对齐
+    description: |
+      FND-FUNC-001 的根因：L0 §6.3（波次间隔可移动=是）vs L2 DD-004 决策（禁止移动）vs 代码实现（禁止移动）。
+      三方中两方（设计 + 代码）一致，L0 文档未同步更新。
+    arbitration: |
+      优先级：需求文档 > 设计决策。但本案例 L0 Challenger W-02 警告在 L0 阶段已识别此问题，
+      L2 DD-004 采纳了更合理的 UX 决策（弹窗期间移动无意义），且代码正确反映了设计意图。
+      裁决：采用 Option A（更新 L0 文档对齐设计），不修改代码。
+      依据：设计决策有合理性，L0 文档作为规范文档应及时反映已决策行为，
+      不应让未更新的草稿文档成为阻塞正确实现的障碍。
+    resolution: FND-FUNC-001 通过更新 L0 文档已解除 blocking
+
+  - conflict_id: CONF-002
+    type: 信息交叉引用确认
+    description: |
+      l3_code_reviewer UNC-002 和 l3_functional_reviewer FND-FUNC-001 都发现了同一个
+      L0 §6.3 与代码的冲突，但分别归因为「设计决策覆盖」和「blocking 功能缺陷」。
+    arbitration: |
+      合规层（l3_functional_reviewer）的 blocking 判定优先于工艺层（l3_code_reviewer）的 UNC 记录。
+      两者实质指向同一问题，FND-FUNC-001 已涵盖，CONF-002 不产生新 finding。
+
+# ──────────────────────────────────────────────
+# 修复验证
+# ──────────────────────────────────────────────
+fix_verification:
+
+  - finding_id: FND-FUNC-001
+    fix_verified: true
+    verification_method: "读取 player-movement.md §6.3 状态矩阵，确认「波次间隔」行已更新为「否 | 否 | 否」"
+
+  - finding_id: FND-CODE-001
+    fix_verified: true
+    verification_method: "读取 game.js:1079-1089，确认 isNaN 块已移至 keys 双键检测之前"
+
+  - finding_id: FND-CODE-002
+    fix_verified: true
+    verification_method: "读取 game.js:1092，确认 `??` 运算符已替换 `||`"
+
+  - finding_id: FND-CODE-003
+    fix_verified: true
+    verification_method: "读取 game.js:1104，确认 leftBound 后多余空格已移除"
+
+# ──────────────────────────────────────────────
+# 最终结论
+# ──────────────────────────────────────────────
+conclusion:
+  verdict: PASS_WITH_FIXES
+  summary: |
+    Round 1 审查共发现 2 个 blocking 级别问题（FND-FUNC-001、FND-CODE-001）。
+    两个 blocking 问题均已在当轮修复并验证通过：
+      - FND-FUNC-001：更新 L0 需求文档 §6.3 状态矩阵，使其与设计决策 DD-004 和代码实现保持一致
+      - FND-CODE-001：调整 NaN 守卫执行顺序，确保防御性代码在所有路径可达
+
+    额外修复（非 blocking）：FND-CODE-002（`?? 5` 替换 `|| 5`）、FND-CODE-003（空格修复）。
+
+    全部修复在原始代码基础上完成，未改变核心功能逻辑。
+    测试覆盖：功能审查独立验证了全部 12 个 Gherkin Scenario 和 11 个边界场景（代码级验证）。
+    测试执行报告（FND-FUNC-002）在本轮缺失，为已知限制。
+
+    L3 实现单元 PLAYER 可进入 L3_deliver 阶段。
+---

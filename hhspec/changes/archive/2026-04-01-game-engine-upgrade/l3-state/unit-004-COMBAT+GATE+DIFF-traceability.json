@@ -1,0 +1,131 @@
+{
+  "unit_id": "UNIT-004",
+  "unit_name": "COMBAT+GATE+DIFFICULTY",
+  "implementer": "L3-Implementer",
+  "timestamp": "2026-03-31T11:34:39.887Z",
+  "constraint_mappings": [
+    {
+      "constraint_id": "REQ-COMBAT-001",
+      "constraint_type": "requirement",
+      "description": "Bullet-enemy collision detection using Arcade Physics",
+      "status": "implemented",
+      "impl_location": "src/systems/CombatSystem.js:11-17",
+      "impl_method": "setupCollisions() - physics.add.overlap()",
+      "evidence": "Uses this.scene.physics.add.overlap() for collision detection"
+    },
+    {
+      "constraint_id": "REQ-COMBAT-002",
+      "constraint_type": "requirement",
+      "description": "Damage calculation logic preserved from original",
+      "status": "implemented",
+      "impl_location": "src/systems/CombatSystem.js:28-31",
+      "impl_method": "onBulletHitEnemy() - damage calculation",
+      "evidence": "Preserves damage calculation: enemy.hp -= bullet.damage"
+    },
+    {
+      "constraint_id": "REQ-COMBAT-003",
+      "constraint_type": "requirement",
+      "description": "Enemy death effects using Phaser Particles",
+      "status": "implemented",
+      "impl_location": "src/systems/CombatSystem.js:50-62",
+      "impl_method": "handleEnemyDeath() - particle emitter",
+      "evidence": "Creates particle emitter with explode() effect on death"
+    },
+    {
+      "constraint_id": "REQ-GATE-001",
+      "constraint_type": "requirement",
+      "description": "Number gates drawn with Phaser Graphics",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/NumberGate.js:5-6,27-42",
+      "impl_method": "NumberGate extends Graphics, draw() method",
+      "evidence": "Extends Phaser.GameObjects.Graphics, uses strokeRect() for rendering"
+    },
+    {
+      "constraint_id": "REQ-GATE-002",
+      "constraint_type": "requirement",
+      "description": "Player buff/debuff on gate pass-through",
+      "status": "implemented",
+      "impl_location": "src/gameobjects/NumberGate.js:14-18,44-52",
+      "impl_method": "value generation + applyEffect()",
+      "evidence": "50% positive/negative values, modifies player.count in applyEffect()"
+    },
+    {
+      "constraint_id": "REQ-DIFF-001",
+      "constraint_type": "requirement",
+      "description": "20-wave progressive difficulty system",
+      "status": "implemented",
+      "impl_location": "src/config/difficultyConfig.js:1-32",
+      "impl_method": "difficultyConfig.waves array",
+      "evidence": "Complete 20-wave configuration array with progressive scaling"
+    },
+    {
+      "constraint_id": "REQ-DIFF-002",
+      "constraint_type": "requirement",
+      "description": "Enemy HP/speed/count scales with wave",
+      "status": "implemented",
+      "impl_location": "src/systems/DifficultyManager.js:15-20,22-26",
+      "impl_method": "getEnemyStats() + getSpawnRate()",
+      "evidence": "Returns scaled hp/speed/count from wave config"
+    }
+  ],
+  "coverage_summary": {
+    "total_constraints": 7,
+    "implemented": 7,
+    "blocked": 0,
+    "coverage_percentage": 100
+  },
+  "files_created": [
+    {
+      "path": "src/systems/CombatSystem.js",
+      "purpose": "Combat system with Arcade Physics collision detection",
+      "constraints": ["REQ-COMBAT-001", "REQ-COMBAT-002", "REQ-COMBAT-003"]
+    },
+    {
+      "path": "src/gameobjects/NumberGate.js",
+      "purpose": "Number gate GameObject using Phaser Graphics",
+      "constraints": ["REQ-GATE-001", "REQ-GATE-002"]
+    },
+    {
+      "path": "src/systems/DifficultyManager.js",
+      "purpose": "Difficulty management system",
+      "constraints": ["REQ-DIFF-001", "REQ-DIFF-002"]
+    },
+    {
+      "path": "src/config/difficultyConfig.js",
+      "purpose": "20-wave difficulty configuration data",
+      "constraints": ["REQ-DIFF-001", "REQ-DIFF-002"]
+    }
+  ],
+  "change_manifest": {
+    "unit_id": "UNIT-004",
+    "implementer": "L3-Implementer",
+    "timestamp": "2026-03-31T11:34:39.887Z",
+    "files": {
+      "added": [
+        {
+          "path": "src/systems/CombatSystem.js",
+          "purpose": "Arcade Physics collision detection and damage calculation",
+          "constraints": ["REQ-COMBAT-001", "REQ-COMBAT-002", "REQ-COMBAT-003"]
+        },
+        {
+          "path": "src/gameobjects/NumberGate.js",
+          "purpose": "Number gate rendering and buff/debuff logic",
+          "constraints": ["REQ-GATE-001", "REQ-GATE-002"]
+        },
+        {
+          "path": "src/systems/DifficultyManager.js",
+          "purpose": "Wave difficulty management",
+          "constraints": ["REQ-DIFF-001", "REQ-DIFF-002"]
+        },
+        {
+          "path": "src/config/difficultyConfig.js",
+          "purpose": "20-wave configuration data",
+          "constraints": ["REQ-DIFF-001", "REQ-DIFF-002"]
+        }
+      ],
+      "modified": [],
+      "deleted": []
+    },
+    "modules_affected": ["combat", "gates", "difficulty"]
+  }
+}

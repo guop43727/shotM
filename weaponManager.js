@@ -1,7 +1,10 @@
 // WeaponManager - Core weapon inventory and evolution logic
-// L0-AC-001, L0-AC-002, L0-AC-003
+// L0-AC-001: Weapon collection and persistence
+// L0-AC-002: 3:1 synthesis with atomic rollback
+// L0-AC-003: Ultimate fusion (3 Super → Ultimate Laser)
 
-const weaponConfig = {
+// FR-WEP-003: Complete evolution tree configuration
+const weaponEvolutionConfig = {
   rifle: { id: 'rifle', name: '步枪', tier: 1, damage: 50, fireRate: 50, bulletCount: 1, color: '#ff7948', nextTier: 'rifle+' },
   'rifle+': { id: 'rifle+', name: '步枪+', tier: 2, damage: 65, fireRate: 45, bulletCount: 1, color: '#ff8958', nextTier: 'rifle++' },
   'rifle++': { id: 'rifle++', name: '步枪++', tier: 3, damage: 85, fireRate: 40, bulletCount: 1, color: '#ff9968', nextTier: 'super_rifle' },
@@ -20,114 +23,325 @@ const weaponConfig = {
   ultimate_laser: { id: 'ultimate_laser', name: '终极激光炮', tier: 5, damage: 150, fireRate: 10, bulletCount: 1, color: '#00e3fd', nextTier: null }
 };
 
-const weaponManager = {
+// StorageAdapter: localStorage with sessionStorage fallback
+// NFR-WEP-002: Fallback to sessionStorage when localStorage full
+const StorageAdapter = {
+  useSessionStorage: false,
+  STORAGE_KEY: 'monsterTide_weaponInventory',
+  VERSION_KEY: 'monsterTide_version',
+
+  // RM-001: save(key, data)
+  save(data) {
+    const payload = {
+      schemaVersion: '2.0.0',
+      lastSaved: Date.now(),
+      inventory: data,
+      checksum: this.calculateChecksum(data)
+    };
+
+    const jsonString = JSON.stringify(payload);
+
+    // Try localStorage first
+    if (!this.useSessionStorage) {
+      try {
+        localStorage.setItem(this.STORAGE_KEY, jsonString);
+        localStorage.setItem(this.VERSION_KEY, '2.0.0');
+        return { success: true, storage: 'localStorage' };
+      } catch (error) {
+        // STOR-001: QuotaExceededError
+        if (error.name === 'QuotaExceededError') {
+          console.warn('[STOR-001] localStorage full, falling back to sessionStorage');
+          this.useSessionStorage = true;
+        }
+        // STOR-002: SecurityError (privacy mode)
+        else if (error.name === 'SecurityError') {
+          console.warn('[STOR-002] localStorage disabled (privacy mode)');
+          this.useSessionStorage = true;
+        }
+        // STOR-003: Unknown error
+        else {
+          console.error('[STOR-003] Unknown storage error:', error);
+          return { success: false, error: 'STOR-003' };
+        }
+      }
+    }
+
+    // Fallback to sessionStorage
+    try {
+      sessionStorage.setItem(this.STORAGE_KEY, jsonString);
+      sessionStorage.setItem(this.VERSION_KEY, '2.0.0');
+      console.warn('[Storage] Using sessionStorage (data temporary)');
+      return { success: true, storage: 'sessionStorage', warning: 'Data temporary' };
+    } catch (sessionError) {
+      // STOR-004: Both storage types failed
+      console.error('[STOR-004] sessionStorage also failed:', sessionError);
+      return { success: false, error: 'STOR-004' };
+    }
+  },
+
+  // RM-002: load(key)
+  load() {
+    let stored = null;
+    try {
+      stored = localStorage.getItem(this.STORAGE_KEY);
+      if (!stored) {
+        stored = sessionStorage.getItem(this.STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('[DATA-001] Storage read failed:', error);
+      return this.getDefaultInventory();
+    }
+
+    if (!stored) {
+      return this.getDefaultInventory();
+    }
+
+    try {
+      const payload = JSON.parse(stored);
+      const inventory = payload.data || payload.inventory || payload;
+
+      // Validate inventory (returns validated copy or false)
+      const validated = this.validateInventory(inventory);
+      if (!validated) {
+        console.warn('[DATA-004] Invalid inventory format, using default');
+        return this.getDefaultInventory();
+      }
+
+      return validated;
+    } catch (parseError) {
+      // DATA-002: JSON parse failed
+      console.error('[DATA-002] JSON parse failed:', parseError);
+      return this.getDefaultInventory();
+    }
+  },
+
+  // RM-004: validate(data)
+  validateInventory(inventory) {
+    if (typeof inventory !== 'object' || inventory === null || Array.isArray(inventory)) {
+      return false;
+    }
+
+    // BLOCK-007 fix: Return new object instead of mutating input
+    const validated = { ...inventory };
+
+    // Ensure at least rifle exists
+    if (!validated.rifle || validated.rifle < 1) {
+      validated.rifle = 1;
+    }
+
+    // Validate counts
+    for (const weaponId in validated) {
+      const count = validated[weaponId];
+      if (typeof count !== 'number' || count < 0 || count > 999999) {
+        validated[weaponId] = Math.max(0, Math.min(999999, Math.floor(count || 0)));
+      }
+    }
+
+    return validated;
+  },
+
+  calculateChecksum(data) {
+    const str = JSON.stringify(data);
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return hash.toString(36);
+  },
+
+  getDefaultInventory() {
+    return { rifle: 1 };
+  }
+};
+
+// WeaponManager: Core business logic
+const WeaponManager = {
   inventory: null,
   saveTimer: null,
 
-  // V-001: Load inventory from localStorage with validation
+  // Unit 8: loadInventory()
   loadInventory() {
-    try {
-      const stored = localStorage.getItem('monsterTide_weaponInventory');
-      if (stored) {
-        const payload = JSON.parse(stored);
-        const raw = payload.data || payload;
-
-        // FND-SEC-003: Validate structure
-        if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-          throw new Error('Invalid inventory format');
-        }
-
-        // FND-SEC-002: Sanitize - only allow known weapons with valid counts
-        this.inventory = {};
-        Object.keys(raw).forEach(key => {
-          if (weaponConfig[key] && typeof raw[key] === 'number' && raw[key] >= 0 && raw[key] <= 9999) {
-            this.inventory[key] = Math.floor(raw[key]);
-          }
-        });
-
-        if (Object.keys(this.inventory).length === 0) {
-          this.inventory = { rifle: 1 };
-        }
-      } else {
-        this.inventory = { rifle: 1 };
-      }
-    } catch (e) {
-      console.warn('Load failed:', e);
-      this.inventory = { rifle: 1 };
-      // FND-FUNC-006: Try sessionStorage fallback
-      try {
-        const sessionData = sessionStorage.getItem('monsterTide_weaponInventory');
-        if (sessionData) {
-          const payload = JSON.parse(sessionData);
-          this.inventory = payload.data || payload;
-        }
-      } catch (se) {
-        console.warn('Session load failed:', se);
-      }
-    }
+    this.inventory = StorageAdapter.load();
     return this.inventory;
   },
 
-  // STEP-01: Get inventory
+  // Unit 1: getInventory()
   getInventory() {
-    return this.inventory || { rifle: 1 };
+    if (!this.inventory) {
+      this.loadInventory();
+    }
+    return { ...this.inventory };
   },
 
-  // STEP-02: Add weapon
-  addWeapon(weaponId) {
-    if (!weaponConfig[weaponId]) return;
-    this.inventory[weaponId] = (this.inventory[weaponId] || 0) + 1;
-    this.debouncedSave();
-  },
-
-  // STEP-03: Merge weapons (3:1 ratio)
-  mergeWeapons(weaponId) {
-    const config = weaponConfig[weaponId];
-    if (!config || !config.nextTier) {
-      return { success: false, error: `${config ? config.name : '未知武器'}已是最高级武器,无法继续合成` };
+  // Unit 2: addWeapon(weaponType)
+  addWeapon(weaponType) {
+    // V-001: Validate weaponType
+    if (!weaponEvolutionConfig[weaponType]) {
+      console.error('[DATA-004] Unknown weapon type:', weaponType);
+      return { success: false, error: 'DATA-004', message: '未知武器类型' };
     }
 
-    const count = this.inventory[weaponId] || 0;
+    // STEP-03: Increment weapon count
+    this.inventory[weaponType] = (this.inventory[weaponType] || 0) + 1;
+
+    // STEP-04: Persist to storage
+    this.debouncedSave();
+
+    // STEP-05: Auto-equip if no weapon equipped
+    if (typeof player !== 'undefined' && player.weapon) {
+      const hasEquippedWeapon = player.weapon.id && weaponEvolutionConfig[player.weapon.id];
+      const playerOwnsEquipped = hasEquippedWeapon && (this.inventory[player.weapon.id] || 0) > 0;
+
+      if (!playerOwnsEquipped) {
+        // Find highest rarity weapon in inventory
+        let highestWeapon = null;
+        let highestTier = 0;
+
+        for (const weaponId in this.inventory) {
+          if (this.inventory[weaponId] > 0 && weaponEvolutionConfig[weaponId]) {
+            const tier = weaponEvolutionConfig[weaponId].tier;
+            if (tier > highestTier) {
+              highestTier = tier;
+              highestWeapon = weaponId;
+            }
+          }
+        }
+
+        if (highestWeapon) {
+          this.equipWeapon(highestWeapon);
+        }
+      }
+    }
+
+    return { success: true, weaponType: weaponType, count: this.inventory[weaponType] };
+  },
+
+  // Unit 3: mergeWeapons(weaponType)
+  mergeWeapons(weaponType) {
+    // STEP-01: Validate weapon type
+    const config = weaponEvolutionConfig[weaponType];
+    if (!config) {
+      return { success: false, error: 'BIZ-002', message: '未知武器类型' };
+    }
+
+    // STEP-03: Check if max tier
+    if (!config.nextTier) {
+      return { success: false, error: 'BIZ-004', message: `${config.name}已是最高级武器，无法继续合成` };
+    }
+
+    // STEP-02: Check material count
+    const count = this.inventory[weaponType] || 0;
     if (count < 3) {
-      return { success: false, error: `材料不足: 需要3个${config.name},当前拥有${count}个` };
+      return { success: false, error: 'BIZ-002', message: `材料不足: 需要3个${config.name}，当前拥有${count}个` };
     }
 
-    // FND-FUNC-005: Check if equipped weapon
-    if (typeof player !== 'undefined' && player.weapon && player.weapon.id === weaponId) {
-      return { success: false, error: '无法合成当前装备的武器' };
+    // STEP-04: Check if currently equipped
+    if (typeof player !== 'undefined' && player.weapon && player.weapon.id === weaponType) {
+      return { success: false, error: 'BIZ-003', message: '无法合成当前装备的武器，请先切换' };
     }
 
-    this.inventory[weaponId] -= 3;
-    this.inventory[config.nextTier] = (this.inventory[config.nextTier] || 0) + 1;
-    this.debouncedSave();
+    // STEP-05: Begin transaction (snapshot for rollback)
+    const snapshot = { ...this.inventory };
 
-    return { success: true, result: config.nextTier };
+    try {
+      // STEP-06: Deduct materials
+      this.inventory[weaponType] -= 3;
+
+      // STEP-07: Add result
+      this.inventory[config.nextTier] = (this.inventory[config.nextTier] || 0) + 1;
+
+      // STEP-08: Persist (commit transaction)
+      const saveResult = this.saveInventory();
+      if (!saveResult) {
+        throw new Error('Save failed');
+      }
+
+      return { success: true, result: config.nextTier };
+    } catch (error) {
+      // Rollback on failure
+      this.inventory = snapshot;
+      console.error('[TXN-004] Transaction failed, rolled back:', error);
+      return { success: false, error: 'TXN-004', message: '合成失败，已回滚' };
+    }
   },
 
-  // STEP-04: Check if can merge
-  canMerge(weaponId) {
-    const config = weaponConfig[weaponId];
-    if (!config) return { canMerge: false, reason: '未知武器' };
-    if (!config.nextTier) return { canMerge: false, reason: '已是最高级' };
+  // Unit 4: equipWeapon(weaponType)
+  equipWeapon(weaponType) {
+    // V-002: Validate weapon type
+    const config = weaponEvolutionConfig[weaponType];
+    if (!config) {
+      console.error('[DATA-004] Unknown weapon type:', weaponType);
+      return { success: false, error: 'DATA-004', message: '未知武器类型' };
+    }
 
-    const count = this.inventory[weaponId] || 0;
-    if (count < 3) return { canMerge: false, reason: `需要3个,当前${count}个` };
+    // V-003: Check ownership (BLOCK-006 fix)
+    if ((this.inventory[weaponType] || 0) === 0) {
+      console.error('[BIZ-002] Weapon not owned:', weaponType);
+      return { success: false, error: 'BIZ-002', message: '您还未拥有该武器' };
+    }
+
+    // STEP-03: Update player weapon
+    if (typeof player !== 'undefined' && player.weapon) {
+      player.weapon.id = config.id;
+      player.weapon.type = config.id;
+      player.weapon.damage = config.damage;
+      player.weapon.fireRate = config.fireRate;
+      player.weapon.bulletCount = config.bulletCount;
+      player.weapon.color = config.color;
+    }
+
+    return { success: true, weaponType: weaponType };
+  },
+
+  // Unit 5: canMerge(weaponType)
+  canMerge(weaponType) {
+    const config = weaponEvolutionConfig[weaponType];
+    if (!config) {
+      return { canMerge: false, reason: '未知武器类型' };
+    }
+
+    if (!config.nextTier) {
+      return { canMerge: false, reason: '已是最高级武器' };
+    }
+
+    const count = this.inventory[weaponType] || 0;
+    if (count < 3) {
+      return { canMerge: false, reason: `需要3个，当前${count}个` };
+    }
+
+    // Check if equipped
+    if (typeof player !== 'undefined' && player.weapon && player.weapon.id === weaponType) {
+      return { canMerge: false, reason: '当前装备的武器无法合成' };
+    }
 
     return { canMerge: true, nextWeapon: config.nextTier };
   },
 
-  // STEP-05: Get evolution tree
+  // Unit 6: getEvolutionTree()
   getEvolutionTree() {
     const inv = this.inventory;
     const paths = [
       ['rifle', 'rifle+', 'rifle++', 'super_rifle'].map(id => ({
-        id, tier: weaponConfig[id].tier, owned: (inv[id] || 0) > 0, count: inv[id] || 0
+        id,
+        tier: weaponEvolutionConfig[id].tier,
+        owned: (inv[id] || 0) > 0,
+        count: inv[id] || 0,
+        canMerge: (inv[id] || 0) >= 3 && !!weaponEvolutionConfig[id].nextTier
       })),
       ['machinegun', 'machinegun+', 'machinegun++', 'super_machinegun'].map(id => ({
-        id, tier: weaponConfig[id].tier, owned: (inv[id] || 0) > 0, count: inv[id] || 0
+        id,
+        tier: weaponEvolutionConfig[id].tier,
+        owned: (inv[id] || 0) > 0,
+        count: inv[id] || 0,
+        canMerge: (inv[id] || 0) >= 3 && !!weaponEvolutionConfig[id].nextTier
       })),
       ['shotgun', 'shotgun+', 'shotgun++', 'super_shotgun'].map(id => ({
-        id, tier: weaponConfig[id].tier, owned: (inv[id] || 0) > 0, count: inv[id] || 0
+        id,
+        tier: weaponEvolutionConfig[id].tier,
+        owned: (inv[id] || 0) > 0,
+        count: inv[id] || 0,
+        canMerge: (inv[id] || 0) >= 3 && !!weaponEvolutionConfig[id].nextTier
       }))
     ];
 
@@ -137,67 +351,147 @@ const weaponManager = {
       tier: 5,
       owned: (inv.ultimate_laser || 0) > 0,
       count: inv.ultimate_laser || 0,
-      canFuse
+      canFuse,
+      requirements: ['super_rifle', 'super_machinegun', 'super_shotgun']
     };
 
     return { paths, fusion };
   },
 
-  // STEP-06: Fuse ultimate weapon
-  fuseUltimate() {
+  // FR-WEP-004: fuseUltimateWeapon()
+  fuseUltimateWeapon() {
     const inv = this.inventory;
-    if ((inv.super_rifle || 0) === 0 || (inv.super_machinegun || 0) === 0 || (inv.super_shotgun || 0) === 0) {
-      return { success: false, error: '需要3种超级武器各1个' };
+
+    // Check materials
+    if ((inv.super_rifle || 0) < 1 || (inv.super_machinegun || 0) < 1 || (inv.super_shotgun || 0) < 1) {
+      return { success: false, error: 'BIZ-005', message: '需要集齐三个Super武器' };
     }
 
-    inv.super_rifle -= 1;
-    inv.super_machinegun -= 1;
-    inv.super_shotgun -= 1;
-    inv.ultimate_laser = (inv.ultimate_laser || 0) + 1;
-    this.debouncedSave();
+    // Transaction snapshot
+    const snapshot = { ...this.inventory };
 
-    return { success: true, result: 'ultimate_laser' };
-  },
-
-  // FND-PERF-001: Debounced save (300ms)
-  debouncedSave() {
-    if (this.saveTimer) clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => this.saveInventory(), 300);
-  },
-
-  // STEP-07: Save inventory with fallback
-  saveInventory() {
     try {
-      const payload = { data: this.inventory };
-      localStorage.setItem('monsterTide_weaponInventory', JSON.stringify(payload));
-      return true;
-    } catch (e) {
-      console.warn('Save failed:', e);
-      // FND-FUNC-006: Fallback to sessionStorage
-      try {
-        sessionStorage.setItem('monsterTide_weaponInventory', JSON.stringify({ data: this.inventory }));
-      } catch (se) {
-        console.warn('Session save failed:', se);
+      // Consume materials
+      inv.super_rifle -= 1;
+      inv.super_machinegun -= 1;
+      inv.super_shotgun -= 1;
+
+      // Add ultimate weapon
+      inv.ultimate_laser = (inv.ultimate_laser || 0) + 1;
+
+      // Persist
+      const saveResult = this.saveInventory();
+      if (!saveResult) {
+        throw new Error('Save failed');
       }
+
+      return { success: true, result: 'ultimate_laser' };
+    } catch (error) {
+      // Rollback
+      this.inventory = snapshot;
+      console.error('[TXN-004] Fusion failed, rolled back:', error);
+      return { success: false, error: 'TXN-004', message: '融合失败，已回滚' };
+    }
+  },
+
+  // Unit 20: validateInventory(data)
+  validateInventory(data) {
+    const validated = StorageAdapter.validateInventory(data);
+    if (validated && typeof validated === 'object') {
+      // Update internal inventory with validated copy
+      this.inventory = validated;
+      return validated;
+    }
+    return validated;
+  },
+
+  // Unit 7: saveInventory()
+  saveInventory() {
+    if (!this.inventory) {
       return false;
     }
+
+    const result = StorageAdapter.save(this.inventory);
+    return result.success;
   },
 
-  // STEP-08: Equip weapon
-  equipWeapon(weaponId) {
-    const config = weaponConfig[weaponId];
-    if (!config || (this.inventory[weaponId] || 0) === 0) return;
-
-    if (typeof player !== 'undefined' && player.weapon) {
-      player.weapon.id = config.id;
-      player.weapon.type = config.id;
-      player.weapon.damage = config.damage;
-      player.weapon.fireRate = config.fireRate;
-      player.weapon.bulletCount = config.bulletCount;
-      player.weapon.color = config.color;
+  // mergeToMax(weaponType): 自动合成到当前库存可达的最高等级
+  // 返回 { success, steps: [{from, to, times}], finalWeapon, finalCount }
+  mergeToMax(weaponType) {
+    const config = weaponEvolutionConfig[weaponType];
+    if (!config) {
+      return { success: false, message: '未知武器类型' };
     }
+
+    // 计算从 weaponType 开始，沿进化链能合成到哪一级
+    // 规则：每3个当前级 → 1个下一级，递归计算
+    const snapshot = { ...this.inventory };
+    const steps = [];
+
+    let currentId = weaponType;
+    let merged = false;
+
+    try {
+      while (true) {
+        const cfg = weaponEvolutionConfig[currentId];
+        if (!cfg || !cfg.nextTier) break; // 已是最高级
+
+        // 检查是否装备中（不能合成装备中的武器）
+        if (typeof player !== 'undefined' && player.weapon && player.weapon.id === currentId) break;
+
+        const available = this.inventory[currentId] || 0;
+        const times = Math.floor(available / 3);
+        if (times === 0) break;
+
+        // 执行 times 次合成
+        this.inventory[currentId] = available - times * 3;
+        this.inventory[cfg.nextTier] = (this.inventory[cfg.nextTier] || 0) + times;
+
+        steps.push({ from: currentId, to: cfg.nextTier, times });
+        merged = true;
+
+        // 继续尝试对下一级进行合成
+        currentId = cfg.nextTier;
+      }
+
+      if (!merged) {
+        this.inventory = snapshot;
+        const count = this.inventory[weaponType] || 0;
+        return { success: false, message: `材料不足或已是最高级（当前${count}个，需要至少3个）` };
+      }
+
+      const saveResult = this.saveInventory();
+      if (!saveResult) throw new Error('Save failed');
+
+      // 找到最终产出的最高级武器
+      const lastStep = steps[steps.length - 1];
+      return {
+        success: true,
+        steps,
+        finalWeapon: lastStep.to,
+        finalCount: this.inventory[lastStep.to] || 0
+      };
+    } catch (error) {
+      this.inventory = snapshot;
+      return { success: false, message: '合成失败，已回滚' };
+    }
+  },
+
+  // Debounced save (300ms)
+  debouncedSave() {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+    }
+    this.saveTimer = setTimeout(() => this.saveInventory(), 300);
   }
 };
 
 // Initialize on load
-weaponManager.loadInventory();
+WeaponManager.loadInventory();
+
+// Expose globally
+if (typeof window !== 'undefined') {
+  window.weaponManager = WeaponManager;
+  window.weaponEvolutionConfig = weaponEvolutionConfig;
+  window.weaponConfig = weaponEvolutionConfig; // Alias for weaponUI.js compatibility
+}

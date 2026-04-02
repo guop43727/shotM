@@ -1,0 +1,172 @@
+---
+reviewer: l3_coordinator
+phase: L3_consolidate
+change_name: weapon-evolution-system
+review_round: 1
+timestamp: "2026-03-30T08:50:00Z"
+overall_verdict: FAIL
+
+# ============================================================
+# REVIEW RESULTS SUMMARY
+# ============================================================
+review_results:
+  - reviewer: l3_functional_reviewer
+    verdict: FAIL
+    blocking_count: 3
+    report: "reviews/l3-func-review.yml"
+  - reviewer: l3_architectural_reviewer
+    verdict: PASS
+    blocking_count: 0
+    report: "reviews/l3-arch-review.yml"
+  - reviewer: l3_spec_compliance_reviewer
+    verdict: FAIL
+    blocking_count: 7
+    report: "reviews/l3-spec-review.yml"
+  - reviewer: l3_code_reviewer
+    verdict: FAIL
+    blocking_count: 4
+    report: "reviews/l3-code-review.yml"
+  - reviewer: l3_security_reviewer
+    verdict: PASS
+    blocking_count: 0
+    report: "reviews/l3-security-review.yml"
+  - reviewer: l3_performance_reviewer
+    verdict: PASS
+    blocking_count: 0
+    report: "reviews/l3-perf-review.yml"
+
+# ============================================================
+# ARBITRATION NOTES
+# ============================================================
+arbitration:
+  - finding_id: FND-SPEC-001_INVALIDATED
+    original: "FND-SPEC-001: Modal ID weapon-modal → weapon-management-modal"
+    decision: INVALIDATED
+    reason: "index.html 实际使用 weapon-modal。L2 设计规范与实际 HTML 不一致，
+      weaponUI.js 与 index.html 保持了一致性。Spec 规范文档错误，不应要求代码修改。"
+
+  - finding_id: FND-SPEC-002_INVALIDATED
+    original: "FND-SPEC-002: inventory-tab-content"
+    decision: INVALIDATED
+    reason: "index.html 实际使用 inventory-tab。同上，设计规范与实际 HTML 不一致。"
+
+  - finding_id: FND-SPEC-003_INVALIDATED
+    original: "FND-SPEC-003: synthesis-tab-content"
+    decision: INVALIDATED
+    reason: "index.html 实际使用 synthesis-tab。同上。"
+
+  - finding_id: FND-SPEC-004_INVALIDATED
+    original: "FND-SPEC-004: tab-btn → tab-button"
+    decision: INVALIDATED
+    reason: "index.html 实际使用 tab-btn。同上，与 HTML 实际保持一致。"
+
+  - finding_id: FND-SPEC-006_DOWNGRADED
+    original: "FND-SPEC-006: 缺少 EventBus 事件发射 (blocking)"
+    decision: DOWNGRADED to warning
+    reason: "项目中不存在 EventBus 实现，这是 L2 设计规范的超出范围要求。
+      当前游戏架构没有事件总线机制，要求实现 EventBus 会引入新的未设计的依赖。
+      降级为 warning，L1/L2 设计文档需在下一轮更新中删除 EventBus 要求。"
+
+  - finding_id: FND-SPEC-010_INVALIDATED
+    original: "FND-SPEC-010: game.pause() vs window.gamePaused"
+    decision: INVALIDATED
+    reason: "game.js 中没有 game.pause() 方法。weaponUI.js 使用 window.gamePaused flag
+      是与 game.js 约定的实际暂停机制（weaponUI.js:58 注释明确说明 'as agreed'）。
+      不应要求调用不存在的方法。"
+
+  - finding_id: FND-SPEC-011_INVALIDATED
+    original: "FND-SPEC-011: game.resume() vs window.gamePaused"
+    decision: INVALIDATED
+    reason: "同 FND-SPEC-010。"
+
+# ============================================================
+# CONSOLIDATED BLOCKING ISSUES (去重 + 仲裁后)
+# ============================================================
+blocking_issues:
+  - id: BLOCK-001
+    source: [FND-FUNC-001]
+    title: "addWeapon() 缺少自动装备逻辑"
+    description: "收集武器掉落箱后应自动切换装备，但 addWeapon() 未调用 equipWeapon()"
+    file: weaponManager.js
+    priority: P0
+
+  - id: BLOCK-002
+    source: [FND-FUNC-002]
+    title: "波次间武器选择界面未实现"
+    description: "Gherkin Scenario 5 要求波次开始前暂停并显示武器选择界面，完整流程缺失"
+    file: game.js / weaponUI.js
+    priority: P0
+
+  - id: BLOCK-003
+    source: [FND-FUNC-003]
+    title: "库存数量 999+ UI 显示未实现"
+    description: "超过999时应显示999+，当前直接显示实际数字"
+    file: weaponUI.js
+    line: "231"
+    priority: P1
+
+  - id: BLOCK-004
+    source: [FND-SPEC-005]
+    title: "Weapon card BEM CSS class 命名缺少前缀"
+    description: "L2 规范要求 weapon-card--owned/locked/equipped/can-merge，实际使用 owned/locked/equipped/can-merge"
+    file: weaponUI.js
+    priority: P2
+
+  - id: BLOCK-005
+    source: [FND-SPEC-007]
+    title: "addWeapon() 错误码 BIZ-002 应为 DATA-004"
+    description: "未知武器类型的错误码应为 DATA-004（数据验证错误），实际用了 BIZ-002（业务规则错误）"
+    file: weaponManager.js
+    line: "45"
+    priority: P2
+
+  - id: BLOCK-006
+    source: [FND-CODE-001]
+    title: "equipWeapon() 缺少库存所有权检查"
+    description: "允许装备库存为零的武器，破坏游戏规则"
+    file: weaponManager.js
+    line: "237-261"
+    priority: P0
+
+  - id: BLOCK-007
+    source: [FND-CODE-002]
+    title: "validateInventory() 直接修改传入对象，违反不可变性"
+    description: "应返回净化副本而非原地修改"
+    file: weaponManager.js
+    line: "118-137"
+    priority: P1
+
+  - id: BLOCK-008
+    source: [FND-CODE-003]
+    title: "addWeapon() 验证失败静默返回 undefined"
+    description: "调用方无法感知错误，应返回结果对象"
+    file: weaponManager.js
+    line: "173-186"
+    priority: P1
+
+  - id: BLOCK-009
+    source: [FND-CODE-004]
+    title: "equipWeapon() 失败时 UI 无反馈"
+    description: "调用方 weaponUI 无论成功与否都关闭弹窗，应检查返回值"
+    file: weaponUI.js
+    line: "322-326"
+    priority: P1
+
+total_blocking: 9
+consolidated_from_14_raw: "仲裁后排除 6 个无效规范冲突（HTML与设计文档不一致），去重后剩余 9 个有效 blocking"
+
+# ============================================================
+# FIX ROUTING
+# ============================================================
+fix_routing:
+  target_phase: L3_fix
+  assigned_implementer: WEAPON-001_and_WEAPON-002
+  fix_units:
+    - unit: WEAPON-001
+      files: [weaponManager.js]
+      issues: [BLOCK-001, BLOCK-005, BLOCK-006, BLOCK-007, BLOCK-008]
+    - unit: WEAPON-002
+      files: [weaponUI.js, game.js]
+      issues: [BLOCK-002, BLOCK-003, BLOCK-004, BLOCK-009]
+
+next_phase: L3_fix

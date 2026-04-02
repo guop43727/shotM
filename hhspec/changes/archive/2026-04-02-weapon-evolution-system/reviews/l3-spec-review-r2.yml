@@ -1,0 +1,51 @@
+---
+reviewer: l3_spec_compliance_reviewer
+reviewer_layer: compliance
+review_round: 2
+change_name: weapon-evolution-system
+review_date: 2026-03-30
+verdict: PASS
+
+summary: |
+  Round 2 re-review of spec compliance after L3_fix round 1.
+
+  BLOCK-005 (addWeapon error code) has been successfully resolved.
+  The error code at weaponManager.js:181 has been corrected from BIZ-002 to DATA-004,
+  matching the L2 API design specification requirement.
+
+  No new spec violations detected in the implementation.
+
+findings:
+  - id: BLOCK-005-RECHECK
+    check_item: SPEC-02
+    category: error_strategy
+    severity: info
+    status: RESOLVED
+    title: "addWeapon() error code corrected"
+    description: |
+      Original issue: addWeapon() used BIZ-002 for unknown weapon type validation failure.
+      L2 spec requires DATA-004 for this scenario (line 128 of api-design.md).
+
+      Fix verification: weaponManager.js line 181 now correctly uses DATA-004.
+    evidence:
+      file: weaponManager.js
+      line: 181
+      code: |
+        console.error('[DATA-004] Unknown weapon type:', weaponType);
+        return { success: false, error: 'DATA-004', message: '未知武器类型' };
+    spec_reference:
+      file: specs/design/api-design.md
+      section: "2.2 addWeapon(weaponType) - Unit 2"
+      line: 128
+      requirement: "V-003: weaponType validity check → FAILURE: → DATA-004"
+    recommendation: "No action needed - issue resolved."
+
+new_issues: []
+
+overall_assessment: |
+  All blocking spec compliance issues from round 1 have been successfully resolved.
+  The implementation now correctly follows the L2 API design specification for error code usage.
+
+  Round 2 verdict: PASS
+
+  The weapon evolution system implementation is compliant with all L2 design specifications.
